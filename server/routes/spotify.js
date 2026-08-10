@@ -162,6 +162,16 @@ router.post('/spotify/import', async (req, res) => {
   }
 });
 
+// Fisher-Yates shuffle helper for true random distribution
+function shuffleArray(array) {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 // GET puzzle from imported Spotify playlist song IDs (excluding previously played song IDs in session)
 router.get('/puzzle/spotify', async (req, res) => {
   try {
@@ -172,8 +182,10 @@ router.get('/puzzle/spotify', async (req, res) => {
       return res.status(400).json({ error: 'songIds parameter is required' });
     }
 
-    const ids = rawIds.split(',').map(Number).filter(Boolean);
-    const excludeIds = new Set(rawExclude.split(',').map(Number).filter(Boolean));
+    const ids = Array.from(new Set(rawIds.split(',').map(Number).filter(Boolean)));
+    const excludeList = rawExclude.split(',').map(Number).filter(Boolean);
+    const excludeIds = new Set(excludeList);
+    const lastPlayedId = excludeList.length > 0 ? excludeList[excludeList.length - 1] : null;
 
     if (!ids.length) {
       return res.status(400).json({ error: 'Invalid songIds' });
@@ -185,11 +197,14 @@ router.get('/puzzle/spotify', async (req, res) => {
 
     if (!candidateIds.length) {
       // All songs in playlist played, auto-reset session candidates
-      candidateIds = ids;
+      // Exclude last played song if playlist has > 1 song to prevent back-to-back repeats
+      candidateIds = ids.length > 1 && lastPlayedId ? ids.filter(id => id !== lastPlayedId) : ids;
       historyReset = true;
     }
 
-    const randomId = candidateIds[Math.floor(Math.random() * candidateIds.length)];
+    // Shuffle candidates with Fisher-Yates for uniform randomness
+    const shuffledCandidates = shuffleArray(candidateIds);
+    const randomId = shuffledCandidates[0];
     const song = db.prepare('SELECT id, title, artist, preview_url FROM songs WHERE id = ?').get(randomId);
 
     if (!song) {
