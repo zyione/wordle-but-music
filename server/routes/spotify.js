@@ -73,84 +73,85 @@ router.post('/spotify/import', async (req, res) => {
     const validSongIds = [];
     let hasEmittedFirstMatch = false;
 
-    for (let i = 0; i < total; i++) {
-      const track = tracksToProcess[i];
-      let matchedId = null;
+    try {
+      for (let i = 0; i < total; i++) {
+        const track = tracksToProcess[i];
+        let matchedId = null;
 
-      try {
-        // Check if song is already in DB by title/artist
-        const existing = db.prepare('SELECT id FROM songs WHERE title = ? AND artist = ?').get(track.title, track.artist);
-        if (existing) {
-          matchedId = existing.id;
-          validSongIds.push(existing.id);
-        } else {
-          // Look up Deezer audio preview
-          const meta = await fetchTrackMetadata(track.title, track.artist);
-          if (meta && meta.preview_url) {
-            insertStmt.run(
-              meta.title,
-              meta.artist,
-              meta.album,
-              meta.artwork_url,
-              meta.preview_url,
-              meta.source,
-              meta.source_track_id
-            );
-            const saved = db.prepare('SELECT id FROM songs WHERE source_track_id = ?').get(meta.source_track_id);
-            if (saved) {
-              matchedId = saved.id;
-              validSongIds.push(saved.id);
+        try {
+          // Check if song is already in DB by title/artist
+          const existing = db.prepare('SELECT id FROM songs WHERE title = ? AND artist = ?').get(track.title, track.artist);
+          if (existing) {
+            matchedId = existing.id;
+            validSongIds.push(existing.id);
+          } else {
+            // Look up Deezer audio preview
+            const meta = await fetchTrackMetadata(track.title, track.artist);
+            if (meta && meta.preview_url) {
+              insertStmt.run(
+                meta.title,
+                meta.artist,
+                meta.album,
+                meta.artwork_url,
+                meta.preview_url,
+                meta.source,
+                meta.source_track_id
+              );
+              const saved = db.prepare('SELECT id FROM songs WHERE source_track_id = ?').get(meta.source_track_id);
+              if (saved) {
+                matchedId = saved.id;
+                validSongIds.push(saved.id);
+              }
             }
+            await delay(80); // Small rate limit pacing for Deezer API
           }
-          await delay(80); // Small rate limit pacing for Deezer API
+        } catch (trackErr) {
+          console.warn(`Skipping track ${i + 1} ("${track.title}") due to lookup error:`, trackErr.message);
         }
-      } catch (trackErr) {
-        console.warn(`Skipping track ${i + 1} ("${track.title}") due to lookup error:`, trackErr.message);
-      }
 
-      // Stream progress update chunk
-      res.write(JSON.stringify({
-        type: 'progress',
-        current: i + 1,
-        total,
-        title: track.title,
-        artist: track.artist,
-        matchedId,
-        playlistId: parsed.playlistId,
-        playlistName: parsed.playlistName,
-        importedTracksCount: validSongIds.length,
-        songIds: [...validSongIds]
-      }) + '\n');
-
-      // Trigger instant first_match event as soon as 1st song is ready!
-      if (!hasEmittedFirstMatch && validSongIds.length > 0) {
-        hasEmittedFirstMatch = true;
+        // Stream progress update chunk
         res.write(JSON.stringify({
-          type: 'first_match',
+          type: 'progress',
+          current: i + 1,
+          total,
+          title: track.title,
+          artist: track.artist,
+          matchedId,
           playlistId: parsed.playlistId,
           playlistName: parsed.playlistName,
           importedTracksCount: validSongIds.length,
           songIds: [...validSongIds]
         }) + '\n');
+
+        // Trigger instant first_match event as soon as 1st song is ready!
+        if (!hasEmittedFirstMatch && validSongIds.length > 0) {
+          hasEmittedFirstMatch = true;
+          res.write(JSON.stringify({
+            type: 'first_match',
+            playlistId: parsed.playlistId,
+            playlistName: parsed.playlistName,
+            importedTracksCount: validSongIds.length,
+            songIds: [...validSongIds]
+          }) + '\n');
+        }
       }
+    } finally {
+      // ALWAYS emit final complete event to guarantee stream finish
+      if (validSongIds.length > 0) {
+        const finalResult = {
+          type: 'complete',
+          playlistId: parsed.playlistId,
+          playlistName: parsed.playlistName,
+          totalPlaylistTracks: parsed.songsCount,
+          importedTracksCount: validSongIds.length,
+          songIds: validSongIds
+        };
+        res.write(JSON.stringify(finalResult) + '\n');
+      } else {
+        res.write(JSON.stringify({ type: 'error', error: 'Could not find playable preview streams for songs in this playlist.' }) + '\n');
+      }
+      res.end();
     }
-
-    if (!validSongIds.length) {
-      res.write(JSON.stringify({ type: 'error', error: 'Could not find playable preview streams for songs in this playlist.' }) + '\n');
-      return res.end();
-    }
-
-    const finalResult = {
-      type: 'complete',
-      playlistId: parsed.playlistId,
-      playlistName: parsed.playlistName,
-      totalPlaylistTracks: parsed.songsCount,
-      importedTracksCount: validSongIds.length,
-      songIds: validSongIds
-    };
-
-    res.write(JSON.stringify(finalResult) + '\n');
-    res.end();
   } catch (error) {
     console.error('Error importing Spotify playlist:', error);
     if (!res.headersSent) {

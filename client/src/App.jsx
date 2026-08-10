@@ -491,12 +491,12 @@ export default function App() {
           {bgImportStatus.isComplete ? (
             <>
               <CheckCircle2 size={16} color="#fff" />
-              <span>Playlist Ready ({bgImportStatus.readyCount} songs available)</span>
+              <span>Playlist Ready ({bgImportStatus.readyCount} playable songs)</span>
             </>
           ) : (
             <>
               <Loader2 size={15} color="#1db954" style={{ animation: 'spin 1.2s linear infinite' }} />
-              <span>Importing Spotify Playlist ({bgImportStatus.readyCount} / {bgImportStatus.total} ready...)</span>
+              <span>Importing Spotify Playlist (Track {bgImportStatus.current} of {bgImportStatus.total}...)</span>
             </>
           )}
         </div>
