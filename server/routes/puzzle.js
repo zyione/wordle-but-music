@@ -1,7 +1,6 @@
 import express from 'express';
 import db from '../db/db.js';
 import { scheduleToday } from '../db/scheduleToday.js';
-import { fetchTrackMetadata } from '../services/deezerClient.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -16,30 +15,8 @@ function getSnippetConfig() {
   return JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 }
 
-async function ensureFreshPreviewUrl(songId, title, artist, currentUrl) {
-  try {
-    // Test if URL is accessible
-    if (currentUrl) {
-      const testRes = await fetch(currentUrl, { method: 'HEAD' }).catch(() => null);
-      if (testRes && testRes.ok) {
-        return currentUrl;
-      }
-    }
-
-    // Refresh url via Deezer API
-    const fresh = await fetchTrackMetadata(title, artist);
-    if (fresh && fresh.preview_url) {
-      db.prepare('UPDATE songs SET preview_url = ? WHERE id = ?').run(fresh.preview_url, songId);
-      return fresh.preview_url;
-    }
-  } catch (err) {
-    console.warn('Error refreshing preview URL:', err.message);
-  }
-  return currentUrl;
-}
-
 // GET today's puzzle
-router.get('/puzzle/today', async (req, res) => {
+router.get('/puzzle/today', (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
     let puzzle = db.prepare(`
@@ -65,14 +42,12 @@ router.get('/puzzle/today', async (req, res) => {
       return res.status(404).json({ error: 'No puzzle found for today. Please seed the database.' });
     }
 
-    const freshUrl = await ensureFreshPreviewUrl(puzzle.song_id, puzzle.title, puzzle.artist, puzzle.preview_url);
-
     const config = getSnippetConfig();
 
     res.json({
       puzzleId: puzzle.puzzle_id,
       puzzleDate: puzzle.puzzle_date,
-      previewUrl: freshUrl,
+      previewUrl: puzzle.preview_url,
       maxGuesses: config.maxGuesses,
       guessDurationsMs: config.guessDurationsMs,
       mode: 'daily'
@@ -84,7 +59,7 @@ router.get('/puzzle/today', async (req, res) => {
 });
 
 // GET random puzzle for UNLIMITED mode (excluding previously played song IDs in session)
-router.get('/puzzle/random', async (req, res) => {
+router.get('/puzzle/random', (req, res) => {
   try {
     const rawExclude = (req.query.excludeIds || '').toString();
     const excludeIds = rawExclude.split(',').map(Number).filter(Boolean);
@@ -112,14 +87,12 @@ router.get('/puzzle/random', async (req, res) => {
       return res.status(404).json({ error: 'No songs available in database to play unlimited mode.' });
     }
 
-    const freshUrl = await ensureFreshPreviewUrl(song.id, song.title, song.artist, song.preview_url);
-
     const config = getSnippetConfig();
 
     res.json({
       puzzleId: `unlimited_${song.id}_${Date.now()}`,
       targetSongId: song.id,
-      previewUrl: freshUrl,
+      previewUrl: song.preview_url,
       maxGuesses: config.maxGuesses,
       guessDurationsMs: config.guessDurationsMs,
       mode: 'unlimited',

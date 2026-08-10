@@ -55,7 +55,8 @@ app.use(cors({
     console.warn(`[CORS] Blocked request from origin: "${origin}"`);
     return callback(new Error('Not allowed by CORS'));
   },
-  credentials: true
+  credentials: true,
+  maxAge: 86400
 }));
 
 app.use(express.json());

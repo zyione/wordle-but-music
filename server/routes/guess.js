@@ -17,7 +17,7 @@ function getMaxGuesses() {
 
 router.post('/guess', (req, res) => {
   try {
-    const { puzzleId, anonId, songId, isSkip, mode, targetSongId, currentGuessesCount = 0 } = req.body;
+    const { puzzleId, anonId, songId, isSkip, mode, targetSongId, currentGuessesCount = 0, skipCount = 1 } = req.body;
 
     if (!puzzleId || !anonId) {
       return res.status(400).json({ error: 'puzzleId and anonId are required' });
@@ -37,7 +37,8 @@ router.post('/guess', (req, res) => {
         return res.status(404).json({ error: 'Target song not found for unlimited mode' });
       }
 
-      const nextGuessNumber = currentGuessesCount + 1;
+      const increment = isSkip ? Math.max(1, Number(skipCount)) : 1;
+      const nextGuessNumber = currentGuessesCount + increment;
       const isCorrect = !isSkip && songId && Number(songId) === Number(targetSong.id);
       const isGameOver = isCorrect || nextGuessNumber >= maxGuesses;
 
@@ -48,6 +49,7 @@ router.post('/guess', (req, res) => {
 
       return res.json({
         guessNumber: nextGuessNumber,
+        addedSkips: increment,
         isCorrect,
         isGameOver,
         isSkip: Boolean(isSkip),
@@ -104,14 +106,19 @@ router.post('/guess', (req, res) => {
       });
     }
 
-    const nextGuessNumber = attempt.guesses_used + 1;
+    const increment = isSkip ? Math.max(1, Number(skipCount)) : 1;
+    const nextGuessNumber = attempt.guesses_used + increment;
     const isCorrect = !isSkip && songId && Number(songId) === Number(puzzle.song_id);
 
-    // Insert guess record
-    db.prepare(`
+    // Insert guess records for all skipped steps
+    const insertStmt = db.prepare(`
       INSERT INTO guesses (attempt_id, guess_number, guessed_song_id, is_correct)
       VALUES (?, ?, ?, ?)
-    `).run(attempt.id, nextGuessNumber, isSkip ? null : songId, isCorrect ? 1 : 0);
+    `);
+
+    for (let step = attempt.guesses_used + 1; step <= nextGuessNumber; step++) {
+      insertStmt.run(attempt.id, step, (step === nextGuessNumber && !isSkip) ? songId : null, (step === nextGuessNumber && isCorrect) ? 1 : 0);
+    }
 
     const newGuessesUsed = nextGuessNumber;
     const isSolved = isCorrect ? 1 : 0;
@@ -133,6 +140,7 @@ router.post('/guess', (req, res) => {
 
     res.json({
       guessNumber: nextGuessNumber,
+      addedSkips: increment,
       isCorrect,
       isGameOver,
       isSkip: Boolean(isSkip),

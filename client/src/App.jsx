@@ -397,51 +397,48 @@ export default function App() {
     if (!puzzleData || isGameOver || targetIndex <= guesses.length) return;
 
     try {
-      let currentCount = guesses.length;
-      let newGuesses = [...guesses];
-      let finalData = null;
+      const currentCount = guesses.length;
+      const skipCount = targetIndex - currentCount + 1;
 
-      while (currentCount <= targetIndex && currentCount < (puzzleData.maxGuesses || 6)) {
-        const bodyPayload = {
-          puzzleId: puzzleData.puzzleId,
-          anonId,
-          songId: null,
-          isSkip: true,
-          mode: gameMode,
-          targetSongId: puzzleData.targetSongId,
-          currentGuessesCount: currentCount
-        };
+      const bodyPayload = {
+        puzzleId: puzzleData.puzzleId,
+        anonId,
+        songId: null,
+        isSkip: true,
+        skipCount,
+        mode: gameMode,
+        targetSongId: puzzleData.targetSongId,
+        currentGuessesCount: currentCount
+      };
 
-        const res = await fetch(`${API_BASE_URL}/api/guess`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(bodyPayload)
-        });
+      const res = await fetch(`${API_BASE_URL}/api/guess`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bodyPayload)
+      });
 
-        if (!res.ok) break;
-        const data = await res.json();
-        finalData = data;
+      if (!res.ok) return;
+      const data = await res.json();
 
+      const newGuesses = [...guesses];
+      for (let i = 0; i < skipCount; i++) {
         newGuesses.push({
-          guessNumber: data.guessNumber,
+          guessNumber: currentCount + i + 1,
           isCorrect: false,
           isSkip: true,
           guessedSong: null
         });
-
-        currentCount++;
-        if (data.isGameOver) break;
       }
 
       setGuesses(newGuesses);
 
-      if (finalData?.isGameOver) {
+      if (data.isGameOver) {
         setIsGameOver(true);
         setIsSolved(false);
-        setTargetSong(finalData.targetSong);
+        setTargetSong(data.targetSong);
         const updatedStats = saveLocalStats(false);
         setStats(updatedStats);
-        saveDailyState(newGuesses, true, false, finalData.targetSong);
+        saveDailyState(newGuesses, true, false, data.targetSong);
         setTimeout(() => setShowResult(true), 600);
       } else {
         saveDailyState(newGuesses, false, false, null);
