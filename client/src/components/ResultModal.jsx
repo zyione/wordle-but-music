@@ -1,10 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Share2, ExternalLink, Trophy, Music, Shuffle, Play, Pause, Volume2, Volume1, VolumeX } from 'lucide-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://wordle-but-music.onrender.com';
+
 export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate, gameMode, gameScore = 0, onPlayNextUnlimited, onClose }) {
   const [copied, setCopied] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef(null);
+
+  const audioSrc = targetSong?.preview_url
+    ? `${API_BASE_URL}/api/audio/proxy?url=${encodeURIComponent(targetSong.preview_url)}`
+    : '';
 
   // Volume & Mute State aligned with main player (persisted in LocalStorage)
   const [volume, setVolume] = useState(() => {
@@ -106,7 +112,7 @@ export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate,
 
   return (
     <div className="modal-overlay">
-      <audio ref={audioRef} src={targetSong.preview_url} preload="auto" onEnded={() => setIsPlaying(false)} />
+      <audio ref={audioRef} src={audioSrc} preload="auto" onEnded={() => setIsPlaying(false)} />
 
       <div className="modal-card">
         <div className="modal-header">

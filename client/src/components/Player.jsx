@@ -33,7 +33,7 @@ export default function Player({
     : (guessDurationsMs[Math.min(currentIndex, guessDurationsMs.length - 1)] || 16000);
 
   const activeAudioSrc = previewUrl
-    ? (useProxy ? `${API_BASE_URL}/api/audio/proxy?url=${encodeURIComponent(previewUrl)}` : previewUrl)
+    ? (previewUrl.startsWith('data:') || previewUrl.startsWith('blob:') ? previewUrl : `${API_BASE_URL}/api/audio/proxy?url=${encodeURIComponent(previewUrl)}`)
     : '';
 
   // Update audio element volume whenever state changes
@@ -51,7 +51,6 @@ export default function Player({
       setIsPlaying(false);
       setCurrentTime(0);
       setAudioError(false);
-      setUseProxy(false);
     }
   }, [currentIndex, isGameOver, previewUrl]);
 
@@ -114,24 +113,14 @@ export default function Player({
       }
 
       attemptPlay(audio, activeMaxMs).catch((err) => {
-        console.warn('Direct play failed or blocked, attempting audio proxy fallback:', err);
-        // Switch to proxy endpoint for 100% cross-browser compatibility
-        if (!useProxy) {
-          setUseProxy(true);
-          setTimeout(() => {
-            if (audioRef.current) {
-              audioRef.current.volume = isMuted ? 0 : volume;
-              audioRef.current.currentTime = 0;
-              attemptPlay(audioRef.current, activeMaxMs).catch((proxyErr) => {
-                console.error('Audio proxy fallback also failed:', proxyErr);
-                setAudioError(true);
-                setIsPlaying(false);
-              });
-            }
-          }, 150);
-        } else {
-          setAudioError(true);
-          setIsPlaying(false);
+        console.warn('Proxy play failed, trying direct Deezer audio preview fallback:', err);
+        if (audioRef.current) {
+          audioRef.current.src = previewUrl;
+          attemptPlay(audioRef.current, activeMaxMs).catch((directErr) => {
+            console.error('Direct audio fallback also failed:', directErr);
+            setAudioError(true);
+            setIsPlaying(false);
+          });
         }
       });
     }
