@@ -5,7 +5,10 @@
 export async function searchDeezerTrack(query) {
   try {
     const encodedQuery = encodeURIComponent(query);
-    const response = await fetch(`https://api.deezer.com/search?q=${encodedQuery}`);
+    // Add 4-second AbortSignal timeout to prevent hanging on dropped network requests
+    const response = await fetch(`https://api.deezer.com/search?q=${encodedQuery}`, {
+      signal: AbortSignal.timeout(4000)
+    });
     if (!response.ok) {
       throw new Error(`Deezer API HTTP error: ${response.status}`);
     }
@@ -19,7 +22,7 @@ export async function searchDeezerTrack(query) {
 
 export async function fetchTrackMetadata(title, artist) {
   let results = await searchDeezerTrack(`${title} ${artist}`);
-  
+
   if (!results.length) {
     // Try title only fallback
     results = await searchDeezerTrack(title);

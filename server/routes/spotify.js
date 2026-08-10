@@ -57,31 +57,35 @@ router.post('/spotify/import', async (req, res) => {
       const track = tracksToProcess[i];
       let matchedId = null;
 
-      // Check if song is already in DB by title/artist
-      const existing = db.prepare('SELECT id FROM songs WHERE title = ? AND artist = ?').get(track.title, track.artist);
-      if (existing) {
-        matchedId = existing.id;
-        validSongIds.push(existing.id);
-      } else {
-        // Look up Deezer audio preview
-        const meta = await fetchTrackMetadata(track.title, track.artist);
-        if (meta && meta.preview_url) {
-          insertStmt.run(
-            meta.title,
-            meta.artist,
-            meta.album,
-            meta.artwork_url,
-            meta.preview_url,
-            meta.source,
-            meta.source_track_id
-          );
-          const saved = db.prepare('SELECT id FROM songs WHERE source_track_id = ?').get(meta.source_track_id);
-          if (saved) {
-            matchedId = saved.id;
-            validSongIds.push(saved.id);
+      try {
+        // Check if song is already in DB by title/artist
+        const existing = db.prepare('SELECT id FROM songs WHERE title = ? AND artist = ?').get(track.title, track.artist);
+        if (existing) {
+          matchedId = existing.id;
+          validSongIds.push(existing.id);
+        } else {
+          // Look up Deezer audio preview
+          const meta = await fetchTrackMetadata(track.title, track.artist);
+          if (meta && meta.preview_url) {
+            insertStmt.run(
+              meta.title,
+              meta.artist,
+              meta.album,
+              meta.artwork_url,
+              meta.preview_url,
+              meta.source,
+              meta.source_track_id
+            );
+            const saved = db.prepare('SELECT id FROM songs WHERE source_track_id = ?').get(meta.source_track_id);
+            if (saved) {
+              matchedId = saved.id;
+              validSongIds.push(saved.id);
+            }
           }
+          await delay(80); // Small rate limit pacing for Deezer API
         }
-        await delay(100); // Respect Deezer API rate limits (~10 requests/sec)
+      } catch (trackErr) {
+        console.warn(`Skipping track ${i + 1} ("${track.title}") due to lookup error:`, trackErr.message);
       }
 
       // Stream progress update chunk
