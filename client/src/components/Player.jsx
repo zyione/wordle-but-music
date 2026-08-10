@@ -179,29 +179,38 @@ export default function Player({ previewUrl, guessDurationsMs = [1000, 2000, 400
           {isPlaying ? <Pause size={28} /> : <Play size={28} style={{ marginLeft: 4 }} />}
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          {/* VOLUME SLIDER CONTROL */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* SLEEK GLASSMORPHISM VOLUME PILL */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: 20,
+            padding: '4px 10px',
+            gap: 6,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+          }}>
             <button
               onClick={toggleMute}
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: isMuted || volume === 0 ? '#ef4444' : 'var(--text-muted)',
+                color: isMuted || volume === 0 ? '#ef4444' : '#10b981',
                 cursor: 'pointer',
-                padding: 4,
+                padding: 0,
                 display: 'flex',
                 alignItems: 'center',
-                transition: 'color 0.2s ease'
+                transition: 'all 0.2s ease'
               }}
-              title={isMuted ? 'Unmute' : 'Mute'}
+              title={isMuted ? 'Unmute' : `Volume: ${Math.round((isMuted ? 0 : volume) * 100)}%`}
             >
               {isMuted || volume === 0 ? (
-                <VolumeX size={18} />
+                <VolumeX size={15} />
               ) : volume < 0.5 ? (
-                <Volume1 size={18} />
+                <Volume1 size={15} />
               ) : (
-                <Volume2 size={18} />
+                <Volume2 size={15} />
               )}
             </button>
 
@@ -213,10 +222,12 @@ export default function Player({ previewUrl, guessDurationsMs = [1000, 2000, 400
               value={isMuted ? 0 : volume}
               onChange={handleVolumeChange}
               style={{
-                width: 54,
+                width: 48,
                 height: 4,
-                accentColor: 'var(--accent-primary)',
-                cursor: 'pointer'
+                borderRadius: 2,
+                accentColor: '#10b981',
+                cursor: 'pointer',
+                outline: 'none'
               }}
               title={`Volume: ${Math.round((isMuted ? 0 : volume) * 100)}%`}
             />

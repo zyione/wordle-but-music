@@ -1,14 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Share2, ExternalLink, Trophy, Music, Shuffle, Play, Pause, Volume2 } from 'lucide-react';
+import { X, Share2, ExternalLink, Trophy, Music, Shuffle, Play, Pause, Volume2, Volume1, VolumeX } from 'lucide-react';
 
 export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate, gameMode, onPlayNextUnlimited, onClose }) {
   const [copied, setCopied] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef(null);
 
+  // Volume & Mute State aligned with main player (persisted in LocalStorage)
+  const [volume, setVolume] = useState(() => {
+    const saved = localStorage.getItem('song_guesser_volume');
+    return saved !== null ? parseFloat(saved) : 0.8;
+  });
+  const [isMuted, setIsMuted] = useState(false);
+
+  // Update audio volume whenever volume or mute state changes
   useEffect(() => {
-    // Auto-play preview audio when modal opens
+    if (audioRef.current) {
+      audioRef.current.volume = isMuted ? 0 : volume;
+    }
+  }, [volume, isMuted]);
+
+  useEffect(() => {
+    // Auto-play preview audio when modal opens, using saved volume setting
     if (audioRef.current && targetSong?.preview_url) {
+      audioRef.current.volume = isMuted ? 0 : volume;
       audioRef.current.play().then(() => {
         setIsPlaying(true);
       }).catch((err) => {
@@ -35,9 +50,29 @@ export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate,
       audio.pause();
       setIsPlaying(false);
     } else {
+      audio.volume = isMuted ? 0 : volume;
       audio.play().then(() => {
         setIsPlaying(true);
       }).catch(err => console.error('Audio play error:', err));
+    }
+  };
+
+  const handleVolumeChange = (e) => {
+    const newVol = parseFloat(e.target.value);
+    setVolume(newVol);
+    setIsMuted(newVol === 0);
+    localStorage.setItem('song_guesser_volume', String(newVol));
+  };
+
+  const toggleMute = () => {
+    if (isMuted) {
+      setIsMuted(false);
+      if (volume === 0) {
+        setVolume(0.8);
+        localStorage.setItem('song_guesser_volume', '0.8');
+      }
+    } else {
+      setIsMuted(true);
     }
   };
 
@@ -93,13 +128,13 @@ export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate,
               <div className="reveal-art" style={{ background: '#1e293b' }} />
             )}
 
-            {/* Audio Toggle Floating Overlay Button */}
+            {/* Floating Audio Play/Pause Button */}
             <button
               onClick={toggleAudio}
               style={{
                 position: 'absolute',
-                bottom: 8,
-                right: 8,
+                bottom: 10,
+                right: 10,
                 background: isPlaying ? '#10b981' : '#3b82f6',
                 border: 'none',
                 width: 44,
@@ -129,12 +164,66 @@ export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate,
             )}
           </div>
 
-          {isPlaying && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#10b981', fontSize: '0.8rem', fontWeight: 600 }}>
-              <Volume2 size={16} />
-              <span>Playing 30s audio preview...</span>
+          {/* SLEEK VOLUME CONTROL ALIGNED WITH MAIN PLAYER */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 4 }}>
+            {isPlaying && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#10b981', fontSize: '0.8rem', fontWeight: 600 }}>
+                <span>Playing 30s preview</span>
+              </div>
+            )}
+
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              background: 'rgba(255, 255, 255, 0.06)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: 20,
+              padding: '4px 12px',
+              gap: 8,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+            }}>
+              <button
+                onClick={toggleMute}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: isMuted || volume === 0 ? '#ef4444' : '#10b981',
+                  cursor: 'pointer',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  transition: 'all 0.2s ease'
+                }}
+                title={isMuted ? 'Unmute' : `Volume: ${Math.round((isMuted ? 0 : volume) * 100)}%`}
+              >
+                {isMuted || volume === 0 ? (
+                  <VolumeX size={15} />
+                ) : volume < 0.5 ? (
+                  <Volume1 size={15} />
+                ) : (
+                  <Volume2 size={15} />
+                )}
+              </button>
+
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={isMuted ? 0 : volume}
+                onChange={handleVolumeChange}
+                style={{
+                  width: 60,
+                  height: 4,
+                  borderRadius: 2,
+                  accentColor: '#10b981',
+                  cursor: 'pointer',
+                  outline: 'none'
+                }}
+                title={`Volume: ${Math.round((isMuted ? 0 : volume) * 100)}%`}
+              />
             </div>
-          )}
+          </div>
 
           <div className="share-grid-box">
             {guesses.map((g, i) => (
