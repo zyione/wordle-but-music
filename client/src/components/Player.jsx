@@ -1,12 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, Volume2, Volume1, VolumeX, AlertCircle } from 'lucide-react';
+import { Play, Pause, Volume2, Volume1, VolumeX, AlertCircle, FastForward } from 'lucide-react';
 
-export default function Player({ previewUrl, guessDurationsMs = [1000, 2000, 4000, 7000, 11000, 16000], currentIndex, isGameOver }) {
+export default function Player({
+  previewUrl,
+  guessDurationsMs = [1000, 2000, 4000, 7000, 11000, 16000],
+  currentIndex,
+  isGameOver,
+  onSelectStep
+}) {
   const audioRef = useRef(null);
   const timerRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [audioError, setAudioError] = useState(false);
+  const [customMaxMs, setCustomMaxMs] = useState(null);
 
   // Volume & Mute State (persisted in LocalStorage)
   const [volume, setVolume] = useState(() => {
@@ -18,10 +25,10 @@ export default function Player({ previewUrl, guessDurationsMs = [1000, 2000, 400
   // Maximum duration of the preview audio (standard 30s)
   const maxTotalMs = 30000;
 
-  // Active max duration allowed for current guess index
-  const activeMaxMs = isGameOver
+  // Active max duration allowed for current guess index (or custom selected step)
+  const activeMaxMs = customMaxMs || (isGameOver
     ? maxTotalMs
-    : (guessDurationsMs[Math.min(currentIndex, guessDurationsMs.length - 1)] || 16000);
+    : (guessDurationsMs[Math.min(currentIndex, guessDurationsMs.length - 1)] || 16000));
 
   // Update audio element volume whenever state changes
   useEffect(() => {
@@ -38,6 +45,7 @@ export default function Player({ previewUrl, guessDurationsMs = [1000, 2000, 400
       setIsPlaying(false);
       setCurrentTime(0);
       setAudioError(false);
+      setCustomMaxMs(null);
     }
   }, [currentIndex, isGameOver, previewUrl]);
 
@@ -77,6 +85,28 @@ export default function Player({ previewUrl, guessDurationsMs = [1000, 2000, 400
     };
   }, [activeMaxMs]);
 
+  const playSnippet = (durationMs) => {
+    const audio = audioRef.current;
+    if (!audio || !previewUrl) return;
+
+    setAudioError(false);
+    audio.currentTime = 0;
+
+    audio.play().then(() => {
+      setIsPlaying(true);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        audio.pause();
+        audio.currentTime = 0;
+        setIsPlaying(false);
+      }, durationMs);
+    }).catch((err) => {
+      console.error('Audio play blocked or failed:', err);
+      setAudioError(true);
+      setIsPlaying(false);
+    });
+  };
+
   const togglePlay = () => {
     const audio = audioRef.current;
     if (!audio || !previewUrl) return;
@@ -88,25 +118,16 @@ export default function Player({ previewUrl, guessDurationsMs = [1000, 2000, 400
       setIsPlaying(false);
       if (timerRef.current) clearTimeout(timerRef.current);
     } else {
-      // Always play from beginning
-      if (audio.currentTime * 1000 >= activeMaxMs || audio.currentTime === 0) {
-        audio.currentTime = 0;
-      }
+      playSnippet(activeMaxMs);
+    }
+  };
 
-      audio.play().then(() => {
-        setIsPlaying(true);
-        const remainingMs = activeMaxMs - (audio.currentTime * 1000);
-        if (timerRef.current) clearTimeout(timerRef.current);
-        timerRef.current = setTimeout(() => {
-          audio.pause();
-          audio.currentTime = 0;
-          setIsPlaying(false);
-        }, Math.max(0, remainingMs));
-      }).catch((err) => {
-        console.error('Audio play blocked or failed:', err);
-        setAudioError(true);
-        setIsPlaying(false);
-      });
+  const handleStepClick = (stepIndex, durMs) => {
+    if (stepIndex > currentIndex && !isGameOver && onSelectStep) {
+      onSelectStep(stepIndex);
+    } else {
+      setCustomMaxMs(durMs);
+      playSnippet(durMs);
     }
   };
 
@@ -142,6 +163,55 @@ export default function Player({ previewUrl, guessDurationsMs = [1000, 2000, 400
   return (
     <div className="player-container">
       <audio ref={audioRef} src={previewUrl} preload="auto" />
+
+      {/* CLICKABLE STEP DURATION PILLS (1, 2, 3, 4, 5, 6) */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, width: '100%' }}>
+        {guessDurationsMs.map((durMs, stepIdx) => {
+          const isStepActive = stepIdx === currentIndex && !customMaxMs;
+          const isStepPassed = stepIdx < currentIndex;
+          const isSelectedCustom = customMaxMs === durMs;
+
+          let pillBg = 'rgba(255, 255, 255, 0.05)';
+          let pillBorder = 'rgba(255, 255, 255, 0.1)';
+          let textColor = 'var(--text-muted)';
+
+          if (isSelectedCustom || isStepActive) {
+            pillBg = 'linear-gradient(135deg, #3b82f6, #2563eb)';
+            pillBorder = '#60a5fa';
+            textColor = '#ffffff';
+          } else if (isStepPassed) {
+            pillBg = 'rgba(16, 185, 129, 0.15)';
+            pillBorder = 'rgba(16, 185, 129, 0.3)';
+            textColor = '#10b981';
+          }
+
+          return (
+            <button
+              key={stepIdx}
+              onClick={() => handleStepClick(stepIdx, durMs)}
+              style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '6px 2px',
+                borderRadius: 10,
+                background: pillBg,
+                border: `1px solid ${pillBorder}`,
+                color: textColor,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                boxShadow: (isStepActive || isSelectedCustom) ? '0 0 12px rgba(59, 130, 246, 0.4)' : 'none'
+              }}
+              title={stepIdx > currentIndex ? `Click to skip to attempt ${stepIdx + 1} (${durMs / 1000}s)` : `Play ${durMs / 1000}s snippet`}
+            >
+              <span style={{ fontSize: '0.72rem', fontWeight: 800 }}>#{stepIdx + 1}</span>
+              <span style={{ fontSize: '0.78rem', fontWeight: 700 }}>{durMs / 1000}s</span>
+            </button>
+          );
+        })}
+      </div>
 
       {/* Progress Timeline with threshold ticks */}
       <div className="timeline-bar-wrapper">

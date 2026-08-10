@@ -346,6 +346,15 @@ export default function App() {
     );
   }
 
+  const handleSelectStep = async (targetIndex) => {
+    if (isGameOver || targetIndex <= guesses.length) return;
+
+    const skipsCount = targetIndex - guesses.length;
+    for (let i = 0; i < skipsCount; i++) {
+      await handleSkip();
+    }
+  };
+
   const currentIndex = guesses.length;
 
   return (
@@ -364,6 +373,7 @@ export default function App() {
           guesses={guesses}
           maxGuesses={puzzleData?.maxGuesses || 6}
           currentIndex={currentIndex}
+          onSelectStep={handleSelectStep}
         />
 
         <Player
@@ -371,6 +381,7 @@ export default function App() {
           guessDurationsMs={puzzleData?.guessDurationsMs}
           currentIndex={currentIndex}
           isGameOver={isGameOver}
+          onSelectStep={handleSelectStep}
         />
 
         {!isGameOver ? (
