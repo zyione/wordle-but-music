@@ -49,16 +49,18 @@ export default function Header({
       {/* Mode Switcher Segmented Control */}
       <div style={{
         display: 'flex',
+        alignItems: 'center',
         background: 'rgba(255, 255, 255, 0.06)',
         padding: 3,
         borderRadius: 20,
         border: '1px solid var(--bg-card-border)',
-        gap: 2
+        gap: 2,
+        whiteSpace: 'nowrap'
       }}>
         <button
           onClick={() => gameMode !== 'daily' && onToggleMode('daily')}
           style={{
-            display: 'flex',
+            display: 'inline-flex',
             alignItems: 'center',
             gap: 5,
             padding: '5px 10px',
@@ -67,19 +69,21 @@ export default function Header({
             fontSize: '0.78rem',
             fontWeight: 700,
             cursor: 'pointer',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
             background: gameMode === 'daily' ? 'var(--accent-primary)' : 'transparent',
             color: gameMode === 'daily' ? '#fff' : 'var(--text-muted)',
             transition: 'all 0.2s ease'
           }}
         >
-          <Calendar size={13} />
+          <Calendar size={13} style={{ flexShrink: 0 }} />
           <span>Daily</span>
         </button>
 
         <button
           onClick={() => gameMode !== 'unlimited' && onToggleMode('unlimited')}
           style={{
-            display: 'flex',
+            display: 'inline-flex',
             alignItems: 'center',
             gap: 5,
             padding: '5px 10px',
@@ -88,19 +92,21 @@ export default function Header({
             fontSize: '0.78rem',
             fontWeight: 700,
             cursor: 'pointer',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
             background: gameMode === 'unlimited' ? 'linear-gradient(135deg, #8b5cf6, #ec4899)' : 'transparent',
             color: gameMode === 'unlimited' ? '#fff' : 'var(--text-muted)',
             transition: 'all 0.2s ease'
           }}
         >
-          <InfinityIcon size={13} />
+          <InfinityIcon size={13} style={{ flexShrink: 0 }} />
           <span>Unlimited</span>
         </button>
 
         <button
           onClick={() => onToggleMode('spotify')}
           style={{
-            display: 'flex',
+            display: 'inline-flex',
             alignItems: 'center',
             gap: 5,
             padding: '5px 10px',
@@ -109,21 +115,23 @@ export default function Header({
             fontSize: '0.78rem',
             fontWeight: 700,
             cursor: 'pointer',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
             background: gameMode === 'spotify' ? '#1db954' : 'transparent',
             color: gameMode === 'spotify' ? '#fff' : 'var(--text-muted)',
             transition: 'all 0.2s ease'
           }}
           title={gameMode === 'spotify' ? 'Click to import or choose another Spotify playlist' : 'Spotify Playlist Mode'}
         >
-          <Disc size={13} />
+          <Disc size={13} style={{ flexShrink: 0 }} />
           <span>Spotify</span>
-          {gameMode === 'spotify' && <PlusCircle size={12} style={{ marginLeft: 2 }} />}
+          {gameMode === 'spotify' && <PlusCircle size={12} style={{ marginLeft: 2, flexShrink: 0 }} />}
         </button>
 
         <button
           onClick={() => onToggleMode('party')}
           style={{
-            display: 'flex',
+            display: 'inline-flex',
             alignItems: 'center',
             gap: 5,
             padding: '5px 10px',
@@ -132,13 +140,15 @@ export default function Header({
             fontSize: '0.78rem',
             fontWeight: 700,
             cursor: 'pointer',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
             background: gameMode === 'party' ? 'linear-gradient(135deg, #ec4899, #8b5cf6)' : 'transparent',
             color: gameMode === 'party' ? '#fff' : 'var(--text-muted)',
             transition: 'all 0.2s ease'
           }}
           title="Party Versus Mode (Play together)"
         >
-          <Users size={13} />
+          <Users size={13} style={{ flexShrink: 0 }} />
           <span>Party 🎉</span>
         </button>
       </div>

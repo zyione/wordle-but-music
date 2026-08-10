@@ -169,7 +169,7 @@ export default function App() {
           setIsSolved(parsed.isSolved || false);
           setTargetSong(parsed.targetSong || null);
           setGameScore(parsed.score || 0);
-          if (parsed.isGameOver) setShowResult(true);
+          setShowResult(false);
         } else {
           setGuesses([]);
           setIsGameOver(false);
