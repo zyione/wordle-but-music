@@ -42,8 +42,8 @@ router.post('/spotify/import', async (req, res) => {
 
     const validSongIds = [];
 
-    // Process top 30 tracks from playlist for fast import
-    const tracksToProcess = parsed.songs.slice(0, 35);
+    // Process top 50 tracks from playlist
+    const tracksToProcess = parsed.songs.slice(0, 50);
 
     for (const track of tracksToProcess) {
       // Check if song is already in DB by title/artist

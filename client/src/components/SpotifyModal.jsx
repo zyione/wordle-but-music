@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, Music2, CheckCircle2, AlertCircle, Loader2, Play, Trash2, ListMusic, Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Music2, CheckCircle2, AlertCircle, Loader2, Play, Trash2, ListMusic } from 'lucide-react';
 
 const LOCAL_STORAGE_KEY = 'song_guesser_cached_spotify_playlists';
 
@@ -14,7 +14,6 @@ function getCachedPlaylists() {
 
 function saveCachedPlaylist(playlistData) {
   const current = getCachedPlaylists();
-  // Filter out duplicate playlistId if re-imported
   const updated = [
     {
       ...playlistData,
@@ -65,9 +64,14 @@ export default function SpotifyModal({ onImportSuccess, onClose, apiBaseUrl = 'h
       }
 
       setImportResult(data);
-      // Cache playlist in LocalStorage
       const updatedCache = saveCachedPlaylist(data);
       setCachedPlaylists(updatedCache);
+
+      // Auto start playing this playlist immediately
+      setTimeout(() => {
+        onImportSuccess(data);
+        onClose();
+      }, 400);
     } catch (err) {
       console.error('Spotify import error:', err);
       setError(err.message || 'Failed to import Spotify playlist.');
@@ -156,7 +160,7 @@ export default function SpotifyModal({ onImportSuccess, onClose, apiBaseUrl = 'h
             </div>
 
             <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
-              This takes a few seconds while we match audio previews for all songs.
+              Matching 30s audio previews for playlist songs...
             </p>
           </div>
         ) : (
@@ -177,7 +181,15 @@ export default function SpotifyModal({ onImportSuccess, onClose, apiBaseUrl = 'h
               <button
                 type="submit"
                 className="btn-submit"
-                style={{ background: '#1db954', width: '100%', height: 46 }}
+                style={{
+                  background: '#1db954',
+                  color: '#ffffff',
+                  fontWeight: 800,
+                  fontSize: '0.95rem',
+                  width: '100%',
+                  height: 46,
+                  boxShadow: '0 4px 14px rgba(29, 185, 84, 0.4)'
+                }}
                 disabled={!playlistUrl.trim()}
               >
                 Import & Start Playlist
@@ -206,7 +218,7 @@ export default function SpotifyModal({ onImportSuccess, onClose, apiBaseUrl = 'h
                 <button
                   className="btn-submit"
                   onClick={handleStartPlaying}
-                  style={{ background: 'linear-gradient(135deg, #1db954, #059669)', width: '100%' }}
+                  style={{ background: 'linear-gradient(135deg, #1db954, #059669)', color: '#ffffff', fontWeight: 800, width: '100%' }}
                 >
                   Start Playing This Playlist 🎧
                 </button>
