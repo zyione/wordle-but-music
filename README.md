@@ -30,6 +30,15 @@ Seed the SQLite database with 50 popular hit songs automatically fetched from th
 npm run seed
 ```
 
+---
+
+## 🌐 Free Deployment Guide
+
+Want to host Song Guesser online for free? Read our complete step-by-step guide:
+👉 **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** *(Covers Vercel + Render free tier setup, persistent SQLite disks, CORS, and 24/7 cold start mitigations!)*
+
+---
+
 ### 3. Run the Game Locally
 Start both the backend server (`http://localhost:4000`) and frontend client (`http://localhost:5173`) simultaneously:
 
