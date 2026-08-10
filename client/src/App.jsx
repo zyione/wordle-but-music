@@ -6,6 +6,7 @@ import SearchAutocomplete from './components/SearchAutocomplete.jsx';
 import ResultModal from './components/ResultModal.jsx';
 import HelpModal from './components/HelpModal.jsx';
 import StatsModal from './components/StatsModal.jsx';
+import { Shuffle } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 
@@ -40,6 +41,7 @@ function saveLocalStats(isWin) {
 }
 
 export default function App() {
+  const [gameMode, setGameMode] = useState('daily'); // 'daily' | 'unlimited'
   const [puzzleData, setPuzzleData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -56,20 +58,25 @@ export default function App() {
 
   const anonId = getAnonId();
 
-  // Load today's puzzle
-  useEffect(() => {
-    async function loadPuzzle() {
-      try {
-        setLoading(true);
-        const res = await fetch(`${API_BASE_URL}/api/puzzle/today`);
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.error || `HTTP error ${res.status}`);
-        }
-        const data = await res.json();
-        setPuzzleData(data);
+  // Load puzzle based on active mode
+  const fetchPuzzle = async (mode) => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        // Check local storage for today's saved state
+      const endpoint = mode === 'unlimited' ? '/api/puzzle/random' : '/api/puzzle/today';
+      const res = await fetch(`${API_BASE_URL}${endpoint}`);
+      
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP error ${res.status}`);
+      }
+      
+      const data = await res.json();
+      setPuzzleData(data);
+
+      if (mode === 'daily') {
+        // Load stored state for today's daily puzzle
         const storageKey = `song_guesser_${data.puzzleDate}`;
         const savedState = localStorage.getItem(storageKey);
         if (savedState) {
@@ -81,21 +88,40 @@ export default function App() {
           if (parsed.isGameOver) {
             setShowResult(true);
           }
+        } else {
+          setGuesses([]);
+          setIsGameOver(false);
+          setIsSolved(false);
+          setTargetSong(null);
+          setShowResult(false);
         }
-      } catch (err) {
-        console.error('Error loading puzzle:', err);
-        setError(err.message || 'Failed to connect to game server');
-      } finally {
-        setLoading(false);
+      } else {
+        // Unlimited mode starts a fresh game for each random song
+        setGuesses([]);
+        setIsGameOver(false);
+        setIsSolved(false);
+        setTargetSong(null);
+        setShowResult(false);
       }
+    } catch (err) {
+      console.error(`Error loading ${mode} puzzle:`, err);
+      setError(err.message || 'Failed to connect to game server');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    loadPuzzle();
-  }, []);
+  useEffect(() => {
+    fetchPuzzle(gameMode);
+  }, [gameMode]);
 
-  // Save game state to localStorage
-  const saveGameState = (newGuesses, gameOver, solved, song) => {
-    if (!puzzleData?.puzzleDate) return;
+  const handleToggleMode = (newMode) => {
+    setGameMode(newMode);
+  };
+
+  // Save game state for daily mode
+  const saveDailyState = (newGuesses, gameOver, solved, song) => {
+    if (gameMode !== 'daily' || !puzzleData?.puzzleDate) return;
     const storageKey = `song_guesser_${puzzleData.puzzleDate}`;
     localStorage.setItem(storageKey, JSON.stringify({
       guesses: newGuesses,
@@ -109,15 +135,20 @@ export default function App() {
     if (!puzzleData || isGameOver) return;
 
     try {
+      const bodyPayload = {
+        puzzleId: puzzleData.puzzleId,
+        anonId,
+        songId: selectedSong.id,
+        isSkip: false,
+        mode: gameMode,
+        targetSongId: puzzleData.targetSongId,
+        currentGuessesCount: guesses.length
+      };
+
       const res = await fetch(`${API_BASE_URL}/api/guess`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          puzzleId: puzzleData.puzzleId,
-          anonId,
-          songId: selectedSong.id,
-          isSkip: false
-        })
+        body: JSON.stringify(bodyPayload)
       });
 
       if (!res.ok) throw new Error('Failed to submit guess');
@@ -139,10 +170,10 @@ export default function App() {
         setTargetSong(data.targetSong);
         const updatedStats = saveLocalStats(data.isCorrect);
         setStats(updatedStats);
-        saveGameState(nextGuesses, true, data.isCorrect, data.targetSong);
+        saveDailyState(nextGuesses, true, data.isCorrect, data.targetSong);
         setTimeout(() => setShowResult(true), 600);
       } else {
-        saveGameState(nextGuesses, false, false, null);
+        saveDailyState(nextGuesses, false, false, null);
       }
     } catch (err) {
       console.error('Error submitting guess:', err);
@@ -153,15 +184,20 @@ export default function App() {
     if (!puzzleData || isGameOver) return;
 
     try {
+      const bodyPayload = {
+        puzzleId: puzzleData.puzzleId,
+        anonId,
+        songId: null,
+        isSkip: true,
+        mode: gameMode,
+        targetSongId: puzzleData.targetSongId,
+        currentGuessesCount: guesses.length
+      };
+
       const res = await fetch(`${API_BASE_URL}/api/guess`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          puzzleId: puzzleData.puzzleId,
-          anonId,
-          songId: null,
-          isSkip: true
-        })
+        body: JSON.stringify(bodyPayload)
       });
 
       if (!res.ok) throw new Error('Failed to skip');
@@ -183,21 +219,28 @@ export default function App() {
         setTargetSong(data.targetSong);
         const updatedStats = saveLocalStats(false);
         setStats(updatedStats);
-        saveGameState(nextGuesses, true, false, data.targetSong);
+        saveDailyState(nextGuesses, true, false, data.targetSong);
         setTimeout(() => setShowResult(true), 600);
       } else {
-        saveGameState(nextGuesses, false, false, null);
+        saveDailyState(nextGuesses, false, false, null);
       }
     } catch (err) {
       console.error('Error submitting skip:', err);
     }
   };
 
+  const handlePlayNextUnlimited = () => {
+    setShowResult(false);
+    fetchPuzzle('unlimited');
+  };
+
   if (loading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', gap: 16 }}>
         <div className="wave-bar" style={{ width: 6, height: 40, background: 'var(--accent-primary)', borderRadius: 3, animation: 'wave 1s infinite alternate' }} />
-        <p style={{ color: 'var(--text-muted)', fontWeight: 500 }}>Loading Today's Song Guesser...</p>
+        <p style={{ color: 'var(--text-muted)', fontWeight: 500 }}>
+          {gameMode === 'unlimited' ? 'Loading Random Song...' : "Loading Today's Puzzle..."}
+        </p>
       </div>
     );
   }
@@ -223,6 +266,8 @@ export default function App() {
   return (
     <>
       <Header
+        gameMode={gameMode}
+        onToggleMode={handleToggleMode}
         onOpenHelp={() => setShowHelp(true)}
         onOpenStats={() => setShowStats(true)}
       />
@@ -249,13 +294,25 @@ export default function App() {
             apiBaseUrl={API_BASE_URL}
           />
         ) : (
-          <button
-            className="share-btn"
-            onClick={() => setShowResult(true)}
-            style={{ marginTop: 8 }}
-          >
-            Show Today's Result & Share
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
+            {gameMode === 'unlimited' && (
+              <button
+                className="share-btn"
+                onClick={handlePlayNextUnlimited}
+                style={{ background: 'linear-gradient(135deg, #8b5cf6, #ec4899)', boxShadow: '0 4px 15px rgba(236, 72, 153, 0.3)' }}
+              >
+                <Shuffle size={18} />
+                Play Next Random Song 🔀
+              </button>
+            )}
+            <button
+              className="share-btn"
+              onClick={() => setShowResult(true)}
+              style={{ background: gameMode === 'unlimited' ? 'rgba(255, 255, 255, 0.08)' : 'linear-gradient(135deg, #10b981, #059669)' }}
+            >
+              Show Result & Share
+            </button>
+          </div>
         )}
       </main>
 
@@ -267,6 +324,8 @@ export default function App() {
           guesses={guesses}
           isSolved={isSolved}
           puzzleDate={puzzleData?.puzzleDate}
+          gameMode={gameMode}
+          onPlayNextUnlimited={handlePlayNextUnlimited}
           onClose={() => setShowResult(false)}
         />
       )}

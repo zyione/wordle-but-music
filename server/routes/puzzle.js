@@ -15,6 +15,7 @@ function getSnippetConfig() {
   return JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 }
 
+// GET today's puzzle
 router.get('/puzzle/today', (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
@@ -48,11 +49,36 @@ router.get('/puzzle/today', (req, res) => {
       puzzleDate: puzzle.puzzle_date,
       previewUrl: puzzle.preview_url,
       maxGuesses: config.maxGuesses,
-      guessDurationsMs: config.guessDurationsMs
+      guessDurationsMs: config.guessDurationsMs,
+      mode: 'daily'
     });
   } catch (error) {
     console.error('Error fetching today puzzle:', error);
     res.status(500).json({ error: 'Failed to retrieve today puzzle' });
+  }
+});
+
+// GET random puzzle for UNLIMITED mode
+router.get('/puzzle/random', (req, res) => {
+  try {
+    const song = db.prepare('SELECT id, preview_url FROM songs ORDER BY RANDOM() LIMIT 1').get();
+    if (!song) {
+      return res.status(404).json({ error: 'No songs available in database to play unlimited mode.' });
+    }
+
+    const config = getSnippetConfig();
+
+    res.json({
+      puzzleId: `unlimited_${song.id}_${Date.now()}`,
+      targetSongId: song.id,
+      previewUrl: song.preview_url,
+      maxGuesses: config.maxGuesses,
+      guessDurationsMs: config.guessDurationsMs,
+      mode: 'unlimited'
+    });
+  } catch (error) {
+    console.error('Error fetching random puzzle:', error);
+    res.status(500).json({ error: 'Failed to retrieve random puzzle' });
   }
 });
 

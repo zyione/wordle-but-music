@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { X, Share2, ExternalLink, Trophy, Music } from 'lucide-react';
+import { X, Share2, ExternalLink, Trophy, Music, Shuffle } from 'lucide-react';
 
-export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate, onClose }) {
+export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate, gameMode, onPlayNextUnlimited, onClose }) {
   const [copied, setCopied] = useState(false);
 
   if (!targetSong) return null;
@@ -14,15 +14,15 @@ export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate,
       return '🟥';
     });
 
-    // Fill remaining up to 6 if needed
     while (emojis.length < 6) {
       emojis.push('⬛');
     }
 
     const gridString = emojis.join('');
     const scoreStr = isSolved ? `${guesses.length}/6` : 'X/6';
+    const modeLabel = gameMode === 'unlimited' ? 'Unlimited ♾️' : (puzzleDate || '');
 
-    return `Song Guesser ${puzzleDate || ''}\n🔊 ${scoreStr}\n\n${gridString}\n\nPlay at: ${window.location.origin}`;
+    return `Song Guesser ${modeLabel}\n🔊 ${scoreStr}\n\n${gridString}\n\nPlay at: ${window.location.origin}`;
   };
 
   const handleCopyShare = () => {
@@ -76,7 +76,18 @@ export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate,
             ))}
           </div>
 
-          <button className="share-btn" onClick={handleCopyShare}>
+          {gameMode === 'unlimited' ? (
+            <button
+              className="share-btn"
+              onClick={onPlayNextUnlimited}
+              style={{ background: 'linear-gradient(135deg, #8b5cf6, #ec4899)', boxShadow: '0 4px 15px rgba(236, 72, 153, 0.3)' }}
+            >
+              <Shuffle size={18} />
+              Play Next Song 🔀
+            </button>
+          ) : null}
+
+          <button className="share-btn" onClick={handleCopyShare} style={{ marginTop: gameMode === 'unlimited' ? 8 : 0 }}>
             <Share2 size={18} />
             {copied ? 'Copied to Clipboard!' : 'Share Your Result'}
           </button>

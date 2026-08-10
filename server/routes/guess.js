@@ -17,13 +17,47 @@ function getMaxGuesses() {
 
 router.post('/guess', (req, res) => {
   try {
-    const { puzzleId, anonId, songId, isSkip } = req.body;
+    const { puzzleId, anonId, songId, isSkip, mode, targetSongId, currentGuessesCount = 0 } = req.body;
 
     if (!puzzleId || !anonId) {
       return res.status(400).json({ error: 'puzzleId and anonId are required' });
     }
 
-    // Get puzzle and target song
+    const maxGuesses = getMaxGuesses();
+
+    // UNLIMITED MODE HANDLING
+    if (mode === 'unlimited' || String(puzzleId).startsWith('unlimited_')) {
+      const targetSong = db.prepare(`
+        SELECT id, title, artist, album, artwork_url, preview_url, source_track_id
+        FROM songs
+        WHERE id = ?
+      `).get(targetSongId);
+
+      if (!targetSong) {
+        return res.status(404).json({ error: 'Target song not found for unlimited mode' });
+      }
+
+      const nextGuessNumber = currentGuessesCount + 1;
+      const isCorrect = !isSkip && songId && Number(songId) === Number(targetSong.id);
+      const isGameOver = isCorrect || nextGuessNumber >= maxGuesses;
+
+      let guessedSongInfo = null;
+      if (songId) {
+        guessedSongInfo = db.prepare('SELECT id, title, artist, artwork_url FROM songs WHERE id = ?').get(songId);
+      }
+
+      return res.json({
+        guessNumber: nextGuessNumber,
+        isCorrect,
+        isGameOver,
+        isSkip: Boolean(isSkip),
+        guessedSong: guessedSongInfo,
+        guessesUsed: nextGuessNumber,
+        targetSong: isGameOver ? targetSong : null
+      });
+    }
+
+    // DAILY MODE HANDLING
     const puzzle = db.prepare(`
       SELECT p.id, p.song_id, s.title, s.artist, s.album, s.artwork_url, s.preview_url, s.source_track_id
       FROM puzzles p
@@ -51,8 +85,6 @@ router.post('/guess', (req, res) => {
       `).run(puzzleId, session.id);
       attempt = db.prepare('SELECT * FROM attempts WHERE puzzle_id = ? AND session_id = ?').get(puzzleId, session.id);
     }
-
-    const maxGuesses = getMaxGuesses();
 
     // If attempt is already solved or completed
     if (attempt.is_solved || attempt.guesses_used >= maxGuesses) {
