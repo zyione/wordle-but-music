@@ -5,7 +5,8 @@
   "description": "Song Guesser - A Heardle-style daily music guessing game",
   "scripts": {
     "dev": "npx concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
-    "start": "npm run start --prefix server",
+    "build": "npm install --prefix server",
+    "start": "node server/index.js",
     "seed": "npm run seed --prefix server",
     "migrate": "npm run migrate --prefix server"
   },

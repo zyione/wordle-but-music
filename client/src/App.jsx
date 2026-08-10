@@ -9,7 +9,7 @@ import StatsModal from './components/StatsModal.jsx';
 import SpotifyModal, { saveCachedPlaylist } from './components/SpotifyModal.jsx';
 import { Shuffle, Loader2, CheckCircle2 } from 'lucide-react';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://wordle-but-music.onrender.com';
 
 function getAnonId() {
   let id = localStorage.getItem('song_guesser_anon_id');
