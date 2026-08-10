@@ -28,7 +28,6 @@ export default function GuessGrid({ guesses, maxGuesses = 6, currentIndex, onSel
           className={rowClass}
           onClick={() => isFuture && onSelectStep && onSelectStep(idx)}
           style={{ cursor: isFuture ? 'pointer' : 'default' }}
-          title={isFuture ? `Click to skip to attempt ${idx + 1}` : undefined}
         >
           <span className="guess-num">{idx + 1}</span>
 
@@ -56,13 +55,13 @@ export default function GuessGrid({ guesses, maxGuesses = 6, currentIndex, onSel
               )
             ) : (
               <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>
-                {isCurrent ? 'Current attempt...' : isFuture ? `Click to skip to step ${idx + 1}...` : ''}
+                {isCurrent ? 'Current attempt...' : ''}
               </span>
             )}
           </div>
 
           <div className="status-badge">
-            {guess ? (
+            {guess && (
               guess.isCorrect ? (
                 <Check size={20} color="var(--status-correct)" />
               ) : guess.isSkip ? (
@@ -70,9 +69,7 @@ export default function GuessGrid({ guesses, maxGuesses = 6, currentIndex, onSel
               ) : (
                 <X size={20} color="var(--status-wrong)" />
               )
-            ) : isFuture ? (
-              <FastForward size={16} color="var(--text-dim)" style={{ opacity: 0.6 }} />
-            ) : null}
+            )}
           </div>
         </div>
       ))}
