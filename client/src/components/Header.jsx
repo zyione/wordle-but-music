@@ -1,7 +1,7 @@
 import React from 'react';
-import { Music2, HelpCircle, BarChart2, Calendar, Infinity as InfinityIcon, Disc } from 'lucide-react';
+import { Music2, HelpCircle, BarChart2, Calendar, Infinity as InfinityIcon, Disc, PlusCircle } from 'lucide-react';
 
-export default function Header({ gameMode, onToggleMode, onOpenHelp, onOpenStats, activePlaylistName }) {
+export default function Header({ gameMode, onToggleMode, onOpenHelp, onOpenStats, onOpenSpotifyModal, activePlaylistName }) {
   return (
     <header className="app-header">
       <div className="logo-group">
@@ -11,9 +11,26 @@ export default function Header({ gameMode, onToggleMode, onOpenHelp, onOpenStats
         <div>
           <h1 className="app-title">Song Guesser</h1>
           {gameMode === 'spotify' && activePlaylistName && (
-            <span style={{ fontSize: '0.72rem', color: '#1db954', fontWeight: 600, display: 'block', marginTop: -2 }}>
-              🎧 {activePlaylistName}
-            </span>
+            <button
+              onClick={onOpenSpotifyModal}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                fontSize: '0.72rem',
+                color: '#1db954',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                marginTop: -2,
+                cursor: 'pointer',
+                padding: 0
+              }}
+              title="Click to switch or import another Spotify playlist"
+            >
+              <span>🎧 {activePlaylistName}</span>
+              <span style={{ fontSize: '0.65rem', textDecoration: 'underline', opacity: 0.8 }}>(Switch)</span>
+            </button>
           )}
         </div>
       </div>
@@ -85,9 +102,11 @@ export default function Header({ gameMode, onToggleMode, onOpenHelp, onOpenStats
             color: gameMode === 'spotify' ? '#fff' : 'var(--text-muted)',
             transition: 'all 0.2s ease'
           }}
+          title={gameMode === 'spotify' ? 'Click to import or choose another Spotify playlist' : 'Spotify Playlist Mode'}
         >
           <Disc size={13} />
           <span>Spotify</span>
+          {gameMode === 'spotify' && <PlusCircle size={12} style={{ marginLeft: 2 }} />}
         </button>
       </div>
 

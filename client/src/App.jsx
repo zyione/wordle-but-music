@@ -129,10 +129,12 @@ export default function App() {
 
   const handleToggleMode = (newMode) => {
     if (newMode === 'spotify') {
-      if (!spotifyPlaylist) {
-        setShowSpotifyModal(true);
-        return;
+      // If already in spotify mode or clicked spotify, open SpotifyModal to allow importing another or switching playlists!
+      setShowSpotifyModal(true);
+      if (spotifyPlaylist) {
+        setGameMode('spotify');
       }
+      return;
     }
     setGameMode(newMode);
   };
@@ -294,6 +296,7 @@ export default function App() {
         onToggleMode={handleToggleMode}
         onOpenHelp={() => setShowHelp(true)}
         onOpenStats={() => setShowStats(true)}
+        onOpenSpotifyModal={() => setShowSpotifyModal(true)}
         activePlaylistName={spotifyPlaylist?.playlistName}
       />
 
