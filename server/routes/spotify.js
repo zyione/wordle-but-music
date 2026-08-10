@@ -117,21 +117,34 @@ router.post('/spotify/import', async (req, res) => {
   }
 });
 
-// GET puzzle from imported Spotify playlist song IDs
+// GET puzzle from imported Spotify playlist song IDs (excluding previously played song IDs in session)
 router.get('/puzzle/spotify', (req, res) => {
   try {
     const rawIds = (req.query.songIds || '').toString();
+    const rawExclude = (req.query.excludeIds || '').toString();
+
     if (!rawIds) {
       return res.status(400).json({ error: 'songIds parameter is required' });
     }
 
     const ids = rawIds.split(',').map(Number).filter(Boolean);
+    const excludeIds = new Set(rawExclude.split(',').map(Number).filter(Boolean));
+
     if (!ids.length) {
       return res.status(400).json({ error: 'Invalid songIds' });
     }
 
-    // Pick random song from the playlist's song IDs
-    const randomId = ids[Math.floor(Math.random() * ids.length)];
+    // Filter available candidate IDs by excluding previously played IDs
+    let candidateIds = ids.filter(id => !excludeIds.has(id));
+    let historyReset = false;
+
+    if (!candidateIds.length) {
+      // All songs in playlist played, auto-reset session candidates
+      candidateIds = ids;
+      historyReset = true;
+    }
+
+    const randomId = candidateIds[Math.floor(Math.random() * candidateIds.length)];
     const song = db.prepare('SELECT id, preview_url FROM songs WHERE id = ?').get(randomId);
 
     if (!song) {
@@ -146,7 +159,8 @@ router.get('/puzzle/spotify', (req, res) => {
       previewUrl: song.preview_url,
       maxGuesses: config.maxGuesses,
       guessDurationsMs: config.guessDurationsMs,
-      mode: 'spotify'
+      mode: 'spotify',
+      historyReset
     });
   } catch (error) {
     console.error('Error fetching Spotify mode puzzle:', error);

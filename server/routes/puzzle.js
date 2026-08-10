@@ -58,10 +58,31 @@ router.get('/puzzle/today', (req, res) => {
   }
 });
 
-// GET random puzzle for UNLIMITED mode
+// GET random puzzle for UNLIMITED mode (excluding previously played song IDs in session)
 router.get('/puzzle/random', (req, res) => {
   try {
-    const song = db.prepare('SELECT id, preview_url FROM songs ORDER BY RANDOM() LIMIT 1').get();
+    const rawExclude = (req.query.excludeIds || '').toString();
+    const excludeIds = rawExclude.split(',').map(Number).filter(Boolean);
+
+    let song;
+    let historyReset = false;
+
+    if (excludeIds.length > 0) {
+      const placeholders = excludeIds.map(() => '?').join(',');
+      song = db.prepare(`
+        SELECT id, preview_url FROM songs
+        WHERE id NOT IN (${placeholders})
+        ORDER BY RANDOM()
+        LIMIT 1
+      `).get(...excludeIds);
+    }
+
+    if (!song) {
+      // All songs played in session, reset history and pick random song
+      song = db.prepare('SELECT id, preview_url FROM songs ORDER BY RANDOM() LIMIT 1').get();
+      historyReset = true;
+    }
+
     if (!song) {
       return res.status(404).json({ error: 'No songs available in database to play unlimited mode.' });
     }
@@ -74,7 +95,8 @@ router.get('/puzzle/random', (req, res) => {
       previewUrl: song.preview_url,
       maxGuesses: config.maxGuesses,
       guessDurationsMs: config.guessDurationsMs,
-      mode: 'unlimited'
+      mode: 'unlimited',
+      historyReset
     });
   } catch (error) {
     console.error('Error fetching random puzzle:', error);

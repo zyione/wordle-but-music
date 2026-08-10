@@ -45,6 +45,7 @@ export default function App() {
   const [gameMode, setGameMode] = useState('daily'); // 'daily' | 'unlimited' | 'spotify'
   const [spotifyPlaylist, setSpotifyPlaylist] = useState(null); // { playlistName, songIds: [...] }
   const [showSpotifyModal, setShowSpotifyModal] = useState(false);
+  const [playedSongIds, setPlayedSongIds] = useState([]); // Track played songs in session to prevent repeats
 
   const [puzzleData, setPuzzleData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -63,7 +64,7 @@ export default function App() {
   const anonId = getAnonId();
 
   // Load puzzle based on active mode
-  const fetchPuzzle = async (mode, customSpotifyIds = null) => {
+  const fetchPuzzle = async (mode, customSpotifyIds = null, currentExcludes = playedSongIds) => {
     try {
       setLoading(true);
       setError(null);
@@ -71,7 +72,8 @@ export default function App() {
       let endpoint = '/api/puzzle/today';
 
       if (mode === 'unlimited') {
-        endpoint = '/api/puzzle/random';
+        const excludeParam = currentExcludes.length > 0 ? `?excludeIds=${currentExcludes.join(',')}` : '';
+        endpoint = `/api/puzzle/random${excludeParam}`;
       } else if (mode === 'spotify') {
         const songIds = customSpotifyIds || spotifyPlaylist?.songIds;
         if (!songIds || !songIds.length) {
@@ -79,7 +81,8 @@ export default function App() {
           setLoading(false);
           return;
         }
-        endpoint = `/api/puzzle/spotify?songIds=${songIds.join(',')}`;
+        const excludeParam = currentExcludes.length > 0 ? `&excludeIds=${currentExcludes.join(',')}` : '';
+        endpoint = `/api/puzzle/spotify?songIds=${songIds.join(',')}${excludeParam}`;
       }
 
       const res = await fetch(`${API_BASE_URL}${endpoint}`);
@@ -90,6 +93,14 @@ export default function App() {
 
       const data = await res.json();
       setPuzzleData(data);
+
+      if (data.targetSongId) {
+        if (data.historyReset) {
+          setPlayedSongIds([data.targetSongId]);
+        } else {
+          setPlayedSongIds((prev) => [...prev, data.targetSongId]);
+        }
+      }
 
       if (mode === 'daily') {
         const storageKey = `song_guesser_${data.puzzleDate}`;
@@ -124,12 +135,12 @@ export default function App() {
   };
 
   useEffect(() => {
-    fetchPuzzle(gameMode);
+    setPlayedSongIds([]);
+    fetchPuzzle(gameMode, null, []);
   }, [gameMode]);
 
   const handleToggleMode = (newMode) => {
     if (newMode === 'spotify') {
-      // If already in spotify mode or clicked spotify, open SpotifyModal to allow importing another or switching playlists!
       setShowSpotifyModal(true);
       if (spotifyPlaylist) {
         setGameMode('spotify');
@@ -142,7 +153,8 @@ export default function App() {
   const handleSpotifyImportSuccess = (importedData) => {
     setSpotifyPlaylist(importedData);
     setGameMode('spotify');
-    fetchPuzzle('spotify', importedData.songIds);
+    setPlayedSongIds([]);
+    fetchPuzzle('spotify', importedData.songIds, []);
   };
 
   // Save game state for daily mode
