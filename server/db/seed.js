@@ -52,13 +52,29 @@ export async function seed() {
     } catch (err) {
       console.error(` Error processing ${item.title}:`, err.message);
     }
-    await delay(200); // Respect Deezer rate limits
+    await delay(150); // Respect Deezer rate limits
   }
 
   console.log(`\nSeeding completed! Successfully added/updated ${addedCount} songs.`);
 
   // Auto schedule today's puzzle
   scheduleToday();
+}
+
+export async function seedIfEmpty() {
+  migrate();
+  try {
+    const row = db.prepare('SELECT COUNT(*) as count FROM songs').get();
+    if (!row || row.count === 0) {
+      console.log('Database empty! Auto-seeding initial songs on server boot...');
+      await seed();
+    } else {
+      scheduleToday();
+    }
+  } catch (err) {
+    console.error('Error checking song count:', err.message);
+    scheduleToday();
+  }
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

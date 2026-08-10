@@ -11,6 +11,7 @@ import guessRoutes from './routes/guess.js';
 import adminRoutes from './routes/admin.js';
 import { migrate } from './db/migrate.js';
 import { scheduleToday } from './db/scheduleToday.js';
+import { seedIfEmpty } from './db/seed.js';
 
 import spotifyRoutes from './routes/spotify.js';
 import audioProxyRoutes from './routes/audioProxy.js';
@@ -24,9 +25,9 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
 
-// Auto run migration & today's scheduler on server start
+// Auto run migration, auto-seed if empty, & today's scheduler on server start
 migrate();
-scheduleToday();
+seedIfEmpty();
 
 app.use(cors({
   origin: [CLIENT_ORIGIN, 'http://localhost:5173', 'http://127.0.0.1:5173'],

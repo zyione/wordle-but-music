@@ -7,21 +7,21 @@ This guide provides step-by-step instructions for hosting **Song Guesser** 100% 
 ## 🏗 Architecture Overview
 
 Song Guesser consists of two main parts:
-1. **Frontend (`/client`)**: A Vite React single-page app. Can be hosted anywhere static files are served (Vercel, Netlify, Cloudflare Pages).
-2. **Backend (`/server`)**: An Express Node.js REST API with a local SQLite database (`songs.db`) and a built-in cross-browser audio proxy (`/api/audio/proxy`). Requires a persistent disk container environment.
+1. **Frontend (`/client`)**: A Vite React single-page app. Hostable for free on Vercel, Netlify, or Cloudflare Pages.
+2. **Backend (`/server`)**: An Express Node.js REST API with a local SQLite database (`songs.db`) and a built-in cross-browser audio proxy (`/api/audio/proxy`). Automatically auto-seeds itself on boot for zero-config deployment.
 
 ---
 
 ## 🚀 Recommended Deployment Stack (100% Free)
 
 - **Frontend**: **Vercel** or **Netlify** (Free forever, global CDN, HTTPS included).
-- **Backend**: **Render.com** (Free Web Service + Persistent Disk).
+- **Backend**: **Render.com** (Free Web Service).
 
 ---
 
 ## Part 1: Deploying the Backend on Render.com
 
-Render offers a free web service tier and allows attaching a persistent disk so your SQLite database file survives restarts and deployments.
+Render offers a 100% free web service instance type for Node.js backend apps.
 
 ### Step 1.1: Create Render Web Service
 1. Sign up / Log in to [Render.com](https://render.com).
@@ -35,26 +35,13 @@ Render offers a free web service tier and allows attaching a persistent disk so 
    - **Start Command**: `npm start`
    - **Instance Type**: `Free`
 
-### Step 1.2: Add Persistent Disk (Crucial for SQLite)
-1. In your Render service sidebar, click **Disks** → **Add Disk**.
-2. **Name**: `sqlite-data`
-3. **Mount Path**: `/data`
-4. **Size**: `1 GB` (Plenty for SQLite)
-
-### Step 1.3: Set Environment Variables on Render
+### Step 1.2: Set Environment Variables on Render
 Go to **Environment Variables** in Render and add:
 - `PORT`: `4000`
-- `DB_PATH`: `/data/songs.db`
-- `CLIENT_ORIGIN`: `https://your-frontend.vercel.app` *(update once frontend is created)*
+- `CLIENT_ORIGIN`: `https://your-frontend.vercel.app` *(update once frontend is deployed)*
 
-### Step 1.4: Run Database Seed on Render
-Once the backend deploys successfully:
-1. Open Render's **Shell** tab in your service dashboard.
-2. Run:
-   ```bash
-   npm run seed
-   ```
-This populates your production SQLite database with 50 top hit tracks!
+> [!NOTE]
+> Render Free Instances do not support persistent disk addons. Song Guesser includes an **automatic boot-seeding mechanism (`seedIfEmpty()`)**. Whenever the free Render instance starts or wakes up, it automatically checks SQLite and seeds 50 hit tracks + Today's Puzzle in 1-2 seconds with zero manual configuration required!
 
 ---
 
@@ -82,17 +69,17 @@ Click **Deploy**! Your frontend will be live at `https://your-project.vercel.app
 
 ## ⚠️ Things You MUST Be Wary Of (Gotchas & Caveats)
 
-### 1. Render Cold Starts / Sleeping (15-min Inactivity)
+### 1. Render Free Tier Cold Starts (15-min Inactivity)
 > [!WARNING]
-> On Render's free tier, the backend web service goes to sleep after **15 minutes of no incoming requests**.
-> - **The Symptom**: The first player visiting your site after inactivity may experience a 30-second delay while Render wakes up the server.
-> - **How to Fix (Free Mitigator)**:
->   Sign up for a free pinging service like [UptimeRobot.com](https://uptimerobot.com) or [Cron-Job.org](https://cron-job.org) and set up a HTTP ping to `https://your-backend.onrender.com/health` every **10 minutes**. This keeps your free server awake 24/7!
+> On Render's free tier, free instances spin down / go to sleep after **15 minutes of inactivity**.
+> - **The Symptom**: The first player visiting your site after inactivity may experience a ~30-second delay while Render spins up the container.
+> - **How to Fix (Free 24/7 Keep-Alive)**:
+>   Sign up for a free pinging service like [UptimeRobot.com](https://uptimerobot.com) or [Cron-Job.org](https://cron-job.org) and set up an HTTP ping to `https://your-backend.onrender.com/health` every **10 minutes**. This keeps your free server awake 24/7!
 
-### 2. SQLite Database File Persistence
-> [!CAUTION]
-> If you deploy the backend on a serverless platform (like Vercel Functions or Netlify Functions) or a container without a persistent disk, **your SQLite `.db` file will reset or be deleted on every deploy/restart!**
-> - Always use Render with a **Render Disk** mounted at `/data`, or use a cloud database (like Supabase PostgreSQL or Turso SQLite) if migrating away from local SQLite.
+### 2. Ephemeral Storage on Free Hosts & Automatic Boot-Seeding
+> [!IMPORTANT]
+> Render Free Instances do not support persistent disks. If the free server spins down or redeploys, non-persistent storage is reset.
+> - **How Song Guesser Handles This**: Our server includes `seedIfEmpty()`. On startup, if the database is fresh or empty, it automatically populates the 50 hit tracks and schedules Today's Puzzle so the game is 100% playable out of the box with zero manual terminal commands!
 
 ### 3. Mixed Content Errors & Cross-Browser Audio Proxying
 > [!IMPORTANT]
