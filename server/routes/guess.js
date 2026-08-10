@@ -25,8 +25,8 @@ router.post('/guess', (req, res) => {
 
     const maxGuesses = getMaxGuesses();
 
-    // UNLIMITED MODE HANDLING
-    if (mode === 'unlimited' || String(puzzleId).startsWith('unlimited_')) {
+    // UNLIMITED & SPOTIFY PLAYLIST MODE HANDLING
+    if (mode === 'unlimited' || mode === 'spotify' || String(puzzleId).startsWith('unlimited_') || String(puzzleId).startsWith('spotify_')) {
       const targetSong = db.prepare(`
         SELECT id, title, artist, album, artwork_url, preview_url, source_track_id
         FROM songs

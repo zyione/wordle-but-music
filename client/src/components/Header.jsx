@@ -1,34 +1,42 @@
 import React from 'react';
-import { Music2, HelpCircle, BarChart2, Calendar, Infinity as InfinityIcon } from 'lucide-react';
+import { Music2, HelpCircle, BarChart2, Calendar, Infinity as InfinityIcon, Disc } from 'lucide-react';
 
-export default function Header({ gameMode, onToggleMode, onOpenHelp, onOpenStats }) {
+export default function Header({ gameMode, onToggleMode, onOpenHelp, onOpenStats, activePlaylistName }) {
   return (
     <header className="app-header">
       <div className="logo-group">
         <div className="logo-icon">
           <Music2 size={22} />
         </div>
-        <h1 className="app-title">Song Guesser</h1>
+        <div>
+          <h1 className="app-title">Song Guesser</h1>
+          {gameMode === 'spotify' && activePlaylistName && (
+            <span style={{ fontSize: '0.72rem', color: '#1db954', fontWeight: 600, display: 'block', marginTop: -2 }}>
+              🎧 {activePlaylistName}
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Mode Switcher Pill */}
+      {/* Mode Switcher Segmented Control */}
       <div style={{
         display: 'flex',
         background: 'rgba(255, 255, 255, 0.06)',
         padding: 3,
         borderRadius: 20,
-        border: '1px solid var(--bg-card-border)'
+        border: '1px solid var(--bg-card-border)',
+        gap: 2
       }}>
         <button
           onClick={() => gameMode !== 'daily' && onToggleMode('daily')}
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 6,
-            padding: '6px 12px',
+            gap: 5,
+            padding: '5px 10px',
             borderRadius: 16,
             border: 'none',
-            fontSize: '0.8rem',
+            fontSize: '0.78rem',
             fontWeight: 700,
             cursor: 'pointer',
             background: gameMode === 'daily' ? 'var(--accent-primary)' : 'transparent',
@@ -36,7 +44,7 @@ export default function Header({ gameMode, onToggleMode, onOpenHelp, onOpenStats
             transition: 'all 0.2s ease'
           }}
         >
-          <Calendar size={14} />
+          <Calendar size={13} />
           <span>Daily</span>
         </button>
 
@@ -45,11 +53,11 @@ export default function Header({ gameMode, onToggleMode, onOpenHelp, onOpenStats
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 6,
-            padding: '6px 12px',
+            gap: 5,
+            padding: '5px 10px',
             borderRadius: 16,
             border: 'none',
-            fontSize: '0.8rem',
+            fontSize: '0.78rem',
             fontWeight: 700,
             cursor: 'pointer',
             background: gameMode === 'unlimited' ? 'linear-gradient(135deg, #8b5cf6, #ec4899)' : 'transparent',
@@ -57,8 +65,29 @@ export default function Header({ gameMode, onToggleMode, onOpenHelp, onOpenStats
             transition: 'all 0.2s ease'
           }}
         >
-          <InfinityIcon size={14} />
+          <InfinityIcon size={13} />
           <span>Unlimited</span>
+        </button>
+
+        <button
+          onClick={() => onToggleMode('spotify')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '5px 10px',
+            borderRadius: 16,
+            border: 'none',
+            fontSize: '0.78rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            background: gameMode === 'spotify' ? '#1db954' : 'transparent',
+            color: gameMode === 'spotify' ? '#fff' : 'var(--text-muted)',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          <Disc size={13} />
+          <span>Spotify</span>
         </button>
       </div>
 

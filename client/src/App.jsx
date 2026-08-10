@@ -6,6 +6,7 @@ import SearchAutocomplete from './components/SearchAutocomplete.jsx';
 import ResultModal from './components/ResultModal.jsx';
 import HelpModal from './components/HelpModal.jsx';
 import StatsModal from './components/StatsModal.jsx';
+import SpotifyModal from './components/SpotifyModal.jsx';
 import { Shuffle } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
@@ -41,7 +42,10 @@ function saveLocalStats(isWin) {
 }
 
 export default function App() {
-  const [gameMode, setGameMode] = useState('daily'); // 'daily' | 'unlimited'
+  const [gameMode, setGameMode] = useState('daily'); // 'daily' | 'unlimited' | 'spotify'
+  const [spotifyPlaylist, setSpotifyPlaylist] = useState(null); // { playlistName, songIds: [...] }
+  const [showSpotifyModal, setShowSpotifyModal] = useState(false);
+
   const [puzzleData, setPuzzleData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -59,24 +63,35 @@ export default function App() {
   const anonId = getAnonId();
 
   // Load puzzle based on active mode
-  const fetchPuzzle = async (mode) => {
+  const fetchPuzzle = async (mode, customSpotifyIds = null) => {
     try {
       setLoading(true);
       setError(null);
 
-      const endpoint = mode === 'unlimited' ? '/api/puzzle/random' : '/api/puzzle/today';
+      let endpoint = '/api/puzzle/today';
+
+      if (mode === 'unlimited') {
+        endpoint = '/api/puzzle/random';
+      } else if (mode === 'spotify') {
+        const songIds = customSpotifyIds || spotifyPlaylist?.songIds;
+        if (!songIds || !songIds.length) {
+          setShowSpotifyModal(true);
+          setLoading(false);
+          return;
+        }
+        endpoint = `/api/puzzle/spotify?songIds=${songIds.join(',')}`;
+      }
+
       const res = await fetch(`${API_BASE_URL}${endpoint}`);
-      
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || `HTTP error ${res.status}`);
       }
-      
+
       const data = await res.json();
       setPuzzleData(data);
 
       if (mode === 'daily') {
-        // Load stored state for today's daily puzzle
         const storageKey = `song_guesser_${data.puzzleDate}`;
         const savedState = localStorage.getItem(storageKey);
         if (savedState) {
@@ -85,9 +100,7 @@ export default function App() {
           setIsGameOver(parsed.isGameOver || false);
           setIsSolved(parsed.isSolved || false);
           setTargetSong(parsed.targetSong || null);
-          if (parsed.isGameOver) {
-            setShowResult(true);
-          }
+          if (parsed.isGameOver) setShowResult(true);
         } else {
           setGuesses([]);
           setIsGameOver(false);
@@ -96,7 +109,6 @@ export default function App() {
           setShowResult(false);
         }
       } else {
-        // Unlimited mode starts a fresh game for each random song
         setGuesses([]);
         setIsGameOver(false);
         setIsSolved(false);
@@ -116,7 +128,19 @@ export default function App() {
   }, [gameMode]);
 
   const handleToggleMode = (newMode) => {
+    if (newMode === 'spotify') {
+      if (!spotifyPlaylist) {
+        setShowSpotifyModal(true);
+        return;
+      }
+    }
     setGameMode(newMode);
+  };
+
+  const handleSpotifyImportSuccess = (importedData) => {
+    setSpotifyPlaylist(importedData);
+    setGameMode('spotify');
+    fetchPuzzle('spotify', importedData.songIds);
   };
 
   // Save game state for daily mode
@@ -229,9 +253,9 @@ export default function App() {
     }
   };
 
-  const handlePlayNextUnlimited = () => {
+  const handlePlayNextRandom = () => {
     setShowResult(false);
-    fetchPuzzle('unlimited');
+    fetchPuzzle(gameMode);
   };
 
   if (loading) {
@@ -239,7 +263,7 @@ export default function App() {
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', gap: 16 }}>
         <div className="wave-bar" style={{ width: 6, height: 40, background: 'var(--accent-primary)', borderRadius: 3, animation: 'wave 1s infinite alternate' }} />
         <p style={{ color: 'var(--text-muted)', fontWeight: 500 }}>
-          {gameMode === 'unlimited' ? 'Loading Random Song...' : "Loading Today's Puzzle..."}
+          {gameMode === 'spotify' ? 'Loading Spotify Song...' : gameMode === 'unlimited' ? 'Loading Random Song...' : "Loading Today's Puzzle..."}
         </p>
       </div>
     );
@@ -270,6 +294,7 @@ export default function App() {
         onToggleMode={handleToggleMode}
         onOpenHelp={() => setShowHelp(true)}
         onOpenStats={() => setShowStats(true)}
+        activePlaylistName={spotifyPlaylist?.playlistName}
       />
 
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -295,20 +320,23 @@ export default function App() {
           />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
-            {gameMode === 'unlimited' && (
+            {gameMode !== 'daily' && (
               <button
                 className="share-btn"
-                onClick={handlePlayNextUnlimited}
-                style={{ background: 'linear-gradient(135deg, #8b5cf6, #ec4899)', boxShadow: '0 4px 15px rgba(236, 72, 153, 0.3)' }}
+                onClick={handlePlayNextRandom}
+                style={{
+                  background: gameMode === 'spotify' ? 'linear-gradient(135deg, #1db954, #059669)' : 'linear-gradient(135deg, #8b5cf6, #ec4899)',
+                  boxShadow: '0 4px 15px rgba(29, 185, 84, 0.3)'
+                }}
               >
                 <Shuffle size={18} />
-                Play Next Random Song 🔀
+                Play Next Song 🔀
               </button>
             )}
             <button
               className="share-btn"
               onClick={() => setShowResult(true)}
-              style={{ background: gameMode === 'unlimited' ? 'rgba(255, 255, 255, 0.08)' : 'linear-gradient(135deg, #10b981, #059669)' }}
+              style={{ background: gameMode !== 'daily' ? 'rgba(255, 255, 255, 0.08)' : 'linear-gradient(135deg, #10b981, #059669)' }}
             >
               Show Result & Share
             </button>
@@ -318,6 +346,13 @@ export default function App() {
 
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
       {showStats && <StatsModal stats={stats} onClose={() => setShowStats(false)} />}
+      {showSpotifyModal && (
+        <SpotifyModal
+          onImportSuccess={handleSpotifyImportSuccess}
+          onClose={() => setShowSpotifyModal(false)}
+          apiBaseUrl={API_BASE_URL}
+        />
+      )}
       {showResult && (
         <ResultModal
           targetSong={targetSong}
@@ -325,7 +360,7 @@ export default function App() {
           isSolved={isSolved}
           puzzleDate={puzzleData?.puzzleDate}
           gameMode={gameMode}
-          onPlayNextUnlimited={handlePlayNextUnlimited}
+          onPlayNextUnlimited={handlePlayNextRandom}
           onClose={() => setShowResult(false)}
         />
       )}
