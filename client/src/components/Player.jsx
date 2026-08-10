@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, Volume2, AlertCircle } from 'lucide-react';
+import { Play, Pause, Volume2, Volume1, VolumeX, AlertCircle } from 'lucide-react';
 
 export default function Player({ previewUrl, guessDurationsMs = [1000, 2000, 4000, 7000, 11000, 16000], currentIndex, isGameOver }) {
   const audioRef = useRef(null);
@@ -8,6 +8,13 @@ export default function Player({ previewUrl, guessDurationsMs = [1000, 2000, 400
   const [currentTime, setCurrentTime] = useState(0);
   const [audioError, setAudioError] = useState(false);
 
+  // Volume & Mute State (persisted in LocalStorage)
+  const [volume, setVolume] = useState(() => {
+    const saved = localStorage.getItem('song_guesser_volume');
+    return saved !== null ? parseFloat(saved) : 0.8;
+  });
+  const [isMuted, setIsMuted] = useState(false);
+
   // Maximum duration of the preview audio (standard 30s)
   const maxTotalMs = 30000;
 
@@ -15,6 +22,13 @@ export default function Player({ previewUrl, guessDurationsMs = [1000, 2000, 400
   const activeMaxMs = isGameOver
     ? maxTotalMs
     : (guessDurationsMs[Math.min(currentIndex, guessDurationsMs.length - 1)] || 16000);
+
+  // Update audio element volume whenever state changes
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = isMuted ? 0 : volume;
+    }
+  }, [volume, isMuted]);
 
   useEffect(() => {
     // Reset player when snippet duration or index changes
@@ -78,7 +92,7 @@ export default function Player({ previewUrl, guessDurationsMs = [1000, 2000, 400
       if (audio.currentTime * 1000 >= activeMaxMs || audio.currentTime === 0) {
         audio.currentTime = 0;
       }
-      
+
       audio.play().then(() => {
         setIsPlaying(true);
         const remainingMs = activeMaxMs - (audio.currentTime * 1000);
@@ -93,6 +107,25 @@ export default function Player({ previewUrl, guessDurationsMs = [1000, 2000, 400
         setAudioError(true);
         setIsPlaying(false);
       });
+    }
+  };
+
+  const handleVolumeChange = (e) => {
+    const newVol = parseFloat(e.target.value);
+    setVolume(newVol);
+    setIsMuted(newVol === 0);
+    localStorage.setItem('song_guesser_volume', String(newVol));
+  };
+
+  const toggleMute = () => {
+    if (isMuted) {
+      setIsMuted(false);
+      if (volume === 0) {
+        setVolume(0.8);
+        localStorage.setItem('song_guesser_volume', '0.8');
+      }
+    } else {
+      setIsMuted(true);
     }
   };
 
@@ -146,7 +179,49 @@ export default function Player({ previewUrl, guessDurationsMs = [1000, 2000, 400
           {isPlaying ? <Pause size={28} /> : <Play size={28} style={{ marginLeft: 4 }} />}
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          {/* VOLUME SLIDER CONTROL */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button
+              onClick={toggleMute}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: isMuted || volume === 0 ? '#ef4444' : 'var(--text-muted)',
+                cursor: 'pointer',
+                padding: 4,
+                display: 'flex',
+                alignItems: 'center',
+                transition: 'color 0.2s ease'
+              }}
+              title={isMuted ? 'Unmute' : 'Mute'}
+            >
+              {isMuted || volume === 0 ? (
+                <VolumeX size={18} />
+              ) : volume < 0.5 ? (
+                <Volume1 size={18} />
+              ) : (
+                <Volume2 size={18} />
+              )}
+            </button>
+
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={isMuted ? 0 : volume}
+              onChange={handleVolumeChange}
+              style={{
+                width: 54,
+                height: 4,
+                accentColor: 'var(--accent-primary)',
+                cursor: 'pointer'
+              }}
+              title={`Volume: ${Math.round((isMuted ? 0 : volume) * 100)}%`}
+            />
+          </div>
+
           {isPlaying ? (
             <div className="visualizer-wave">
               <div className="wave-bar" />
