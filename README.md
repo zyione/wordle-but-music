@@ -6,13 +6,10 @@ Players listen to increasingly long snippets of a daily mystery song intro (1s, 
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start Guide
 
-### 1. Prerequisites
-- **Node.js**: v18 or higher installed on your computer.
-
-### 2. Installation
-Clone the repository and install dependencies:
+### 1. Installation
+Clone the repository and install all dependencies:
 
 ```bash
 git clone https://github.com/zyione/wordle-but-music.git
@@ -26,14 +23,14 @@ npm install --prefix server
 npm install --prefix client
 ```
 
-### 3. Database Seed & Initial Setup
+### 2. Database Seed & Initial Setup
 Seed the SQLite database with 50 popular hit songs automatically fetched from the Deezer API:
 
 ```bash
 npm run seed
 ```
 
-### 4. Run the Game Locally
+### 3. Run the Game Locally
 Start both the backend server (`http://localhost:4000`) and frontend client (`http://localhost:5173`) simultaneously:
 
 ```bash
@@ -44,51 +41,51 @@ Open `http://localhost:5173` in your browser to start playing!
 
 ---
 
-## 🎮 How to Play Overall
+## 🎮 How to Use & Play Overall
 
 1. **Listen to the snippet**: Click the big **Play** button to hear the audio preview.
 2. **Guess count unlocks longer clips**:
-   - Guess 1: 1 second
-   - Guess 2: 2 seconds
-   - Guess 3: 4 seconds
-   - Guess 4: 7 seconds
-   - Guess 5: 11 seconds
-   - Guess 6: 16 seconds (Full snippet duration)
-3. **Search & Submit**: Type in the search box to autocomplete against the game's song database. Pick a song and click **Submit**, or click **Skip** to advance to the next snippet length without making a guess.
-4. **Win or Lose**: On a correct guess or after 6 attempts, the full song title, artist, album cover, and full 30-second preview are revealed!
+   - **Guess 1**: 1 second
+   - **Guess 2**: 2 seconds
+   - **Guess 3**: 4 seconds
+   - **Guess 4**: 7 seconds
+   - **Guess 5**: 11 seconds
+   - **Guess 6**: 16 seconds (Full snippet duration)
+3. **Search & Submit**: Type into the search box to autocomplete against the game's song database. Pick a song and click **Submit**, or click **Skip** to advance to the next snippet length without making a guess.
+4. **Win or Lose Reveal**: On a correct guess or after 6 attempts, the full song title, artist, album cover, and full 30-second preview are revealed!
 5. **Share Result**: Click **Share Your Result** to copy a Wordle-style color grid (e.g. `🟩🟧🟥⬛⬛⬛`) to your clipboard.
 
 ---
 
 ## ➕ How to Add Missing Songs
 
-There are **two easy ways** to expand the song database without touching complex code!
+You **never** have to manually download `.mp3` files or upload images! Everything is pulled automatically from the free Deezer API.
 
-### Method 1: Using the Admin API Endpoint (Instant Add)
-You can add any song directly by sending a simple HTTP POST request to your server. No manual audio downloading or image uploading required — the backend automatically looks up the song on Deezer, fetches the 30-second audio preview URL, and gets the high-resolution album cover art!
+### Method 1: Instant Add via Admin API (Recommended)
+You can add any missing song while the server is running by sending a `POST` request to `http://localhost:4000/admin/songs`. The server will look up the track on Deezer, grab the 30s preview audio stream URL + album artwork, and insert it into your database immediately!
 
 #### Using `curl` (Terminal / Command Prompt):
 ```bash
 curl -X POST http://localhost:4000/admin/songs \
   -H "Content-Type: application/json" \
-  -d '{"title": "Bohemian Rhapsody", "artist": "Queen"}'
+  -d "{\"title\": \"Bohemian Rhapsody\", \"artist\": \"Queen\"}"
 ```
 
-#### Using Postman / Insomnia:
+#### Using Postman / Insomnia / Thunder Client:
 - **Method**: `POST`
 - **URL**: `http://localhost:4000/admin/songs`
 - **Headers**: `Content-Type: application/json`
 - **Body (JSON)**:
   ```json
   {
-    "title": "Thriller",
-    "artist": "Michael Jackson"
+    "title": "Espresso",
+    "artist": "Sabrina Carpenter"
   }
   ```
 
 ---
 
-### Method 2: Adding to `seedList.json` (Bulk Add)
+### Method 2: Bulk Add via `seedList.json`
 
 1. Open `server/db/seedList.json`.
 2. Add your desired song title and artist pair to the array:
@@ -106,7 +103,7 @@ curl -X POST http://localhost:4000/admin/songs \
 
 ---
 
-### 📅 How to Schedule a Specific Song for Today or a Future Date
+### 📅 Method 3: Schedule a Specific Song for Today or a Future Date
 
 By default, the server auto-selects a random unused song for every new date. If you want to force a specific song for a specific date:
 
@@ -118,6 +115,20 @@ Send a `POST` request to `http://localhost:4000/admin/puzzle`:
   "songId": 5
 }
 ```
+
+---
+
+## 🔌 API Endpoints Summary
+
+| Method | Route | Purpose |
+|---|---|---|
+| `GET` | `/api/config` | Returns audio snippet duration thresholds and max guesses |
+| `GET` | `/api/puzzle/today` | Returns today's puzzle ID & preview audio stream URL (hidden title/artist) |
+| `GET` | `/api/search?q=` | Live autocomplete search against local song database |
+| `POST` | `/api/guess` | Body: `{ puzzleId, anonId, songId, isSkip }` → validates guess & tracks progress |
+| `POST` | `/admin/songs` | Body: `{ title, artist }` → fetches Deezer preview & artwork, adds to DB |
+| `POST` | `/admin/puzzle` | Body: `{ date, songId }` → schedules target song for a calendar date |
+| `GET` | `/admin/songs` | Returns list of all songs in database |
 
 ---
 
