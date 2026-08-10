@@ -35,7 +35,7 @@ function deleteCachedPlaylist(playlistId) {
 export default function SpotifyModal({ onImportSuccess, onClose, apiBaseUrl = 'http://localhost:4000' }) {
   const [playlistUrl, setPlaylistUrl] = useState('');
   const [loading, setLoading] = useState(false);
-  const [loadingStatus, setLoadingStatus] = useState('Parsing Spotify playlist data...');
+  const [progress, setProgress] = useState({ current: 0, total: 0, percent: 0, status: 'Parsing Spotify playlist...', trackInfo: '' });
   const [error, setError] = useState(null);
   const [importResult, setImportResult] = useState(null);
   const [cachedPlaylists, setCachedPlaylists] = useState(getCachedPlaylists());
@@ -48,30 +48,73 @@ export default function SpotifyModal({ onImportSuccess, onClose, apiBaseUrl = 'h
       setLoading(true);
       setError(null);
       setImportResult(null);
-      setLoadingStatus('Parsing Spotify playlist structure...');
+      setProgress({ current: 0, total: 0, percent: 0, status: 'Connecting to Spotify...', trackInfo: '' });
 
-      const res = await fetch(`${apiBaseUrl}/api/spotify/import`, {
+      const response = await fetch(`${apiBaseUrl}/api/spotify/import`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ playlistUrl: playlistUrl.trim() })
       });
 
-      setLoadingStatus('Matching 30s audio previews via Deezer CDN...');
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to import playlist');
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        throw new Error(errJson.error || `HTTP error ${response.status}`);
       }
 
-      setImportResult(data);
-      const updatedCache = saveCachedPlaylist(data);
-      setCachedPlaylists(updatedCache);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+      let completedData = null;
 
-      // Auto start playing this playlist immediately
-      setTimeout(() => {
-        onImportSuccess(data);
-        onClose();
-      }, 400);
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // Keep leftover partial line
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const msg = JSON.parse(line);
+            if (msg.type === 'init') {
+              setProgress({
+                current: 0,
+                total: msg.total,
+                percent: 0,
+                status: `Importing "${msg.playlistName}"...`,
+                trackInfo: `Preparing to process ${msg.total} tracks`
+              });
+            } else if (msg.type === 'progress') {
+              const pct = Math.round((msg.current / msg.total) * 100);
+              setProgress({
+                current: msg.current,
+                total: msg.total,
+                percent: pct,
+                status: `Track ${msg.current} of ${msg.total}`,
+                trackInfo: `Matching "${msg.title}" by ${msg.artist}`
+              });
+            } else if (msg.type === 'error') {
+              throw new Error(msg.error || 'Import error');
+            } else if (msg.type === 'complete') {
+              completedData = msg;
+              setImportResult(msg);
+              const updatedCache = saveCachedPlaylist(msg);
+              setCachedPlaylists(updatedCache);
+            }
+          } catch (lineErr) {
+            console.warn('Error parsing stream line:', lineErr);
+          }
+        }
+      }
+
+      if (completedData) {
+        setTimeout(() => {
+          onImportSuccess(completedData);
+          onClose();
+        }, 500);
+      }
     } catch (err) {
       console.error('Spotify import error:', err);
       setError(err.message || 'Failed to import Spotify playlist.');
@@ -111,21 +154,21 @@ export default function SpotifyModal({ onImportSuccess, onClose, apiBaseUrl = 'h
           </button>
         </div>
 
-        {/* LOADING SCREEN STATE */}
+        {/* LIVE PROGRESS LOADING SCREEN STATE */}
         {loading ? (
           <div style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '36px 16px',
+            padding: '32px 16px',
             gap: 20,
             textAlign: 'center'
           }}>
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <div style={{
-                width: 72,
-                height: 72,
+                width: 76,
+                height: 76,
                 borderRadius: '50%',
                 background: 'rgba(29, 185, 84, 0.15)',
                 display: 'flex',
@@ -133,34 +176,43 @@ export default function SpotifyModal({ onImportSuccess, onClose, apiBaseUrl = 'h
                 justifyContent: 'center',
                 boxShadow: '0 0 30px rgba(29, 185, 84, 0.3)'
               }}>
-                <Loader2 size={36} color="#1db954" style={{ animation: 'spin 1.2s linear infinite' }} />
+                <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#1db954' }}>
+                  {progress.percent}%
+                </span>
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <h3 style={{ fontSize: '1.15rem', color: '#fff', fontWeight: 700 }}>Importing Spotify Playlist...</h3>
-              <p style={{ fontSize: '0.85rem', color: '#1db954', fontWeight: 500 }}>{loadingStatus}</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%' }}>
+              <h3 style={{ fontSize: '1.2rem', color: '#fff', fontWeight: 700 }}>
+                {progress.total ? `Processing Track ${progress.current} of ${progress.total}` : 'Connecting to Spotify...'}
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: '#1db954', fontWeight: 600, minHeight: 20 }}>
+                {progress.trackInfo || progress.status}
+              </p>
             </div>
 
+            {/* Live Filling Progress Bar */}
             <div style={{
               width: '100%',
-              height: 6,
+              height: 10,
               background: 'rgba(255, 255, 255, 0.08)',
-              borderRadius: 4,
+              borderRadius: 6,
               overflow: 'hidden',
-              marginTop: 8
+              marginTop: 4,
+              border: '1px solid rgba(255, 255, 255, 0.08)'
             }}>
               <div style={{
                 height: '100%',
-                width: '60%',
+                width: `${Math.max(5, progress.percent)}%`,
                 background: 'linear-gradient(90deg, #1db954, #10b981)',
-                borderRadius: 4,
-                animation: 'wave 1.5s ease-in-out infinite alternate'
+                borderRadius: 6,
+                transition: 'width 0.25s ease-out',
+                boxShadow: '0 0 12px rgba(29, 185, 84, 0.5)'
               }} />
             </div>
 
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
-              Matching 30s audio previews for playlist songs...
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>
+              Fetching 30s audio previews and artwork via Deezer CDN...
             </p>
           </div>
         ) : (
