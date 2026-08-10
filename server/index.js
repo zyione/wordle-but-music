@@ -29,13 +29,32 @@ const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
 migrate();
 seedIfEmpty();
 
+// Normalize and sanitize allowed origins to prevent trailing slash CORS mismatches
+const cleanOriginStr = (str) => (str ? str.trim().replace(/\/+$/, '') : '');
+
+const staticAllowed = [
+  cleanOriginStr(CLIENT_ORIGIN),
+  'https://wordle-but-music.vercel.app',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173'
+].filter(Boolean);
+
 app.use(cors({
-  origin: [
-    CLIENT_ORIGIN,
-    'https://wordle-but-music.vercel.app',
-    'http://localhost:5173',
-    'http://127.0.0.1:5173'
-  ],
+  origin: (origin, callback) => {
+    // Allow non-browser requests (curl, server-to-server, health checks)
+    if (!origin) return callback(null, true);
+
+    const cleanReqOrigin = cleanOriginStr(origin);
+    const isAllowed = staticAllowed.some((allowed) => allowed === cleanReqOrigin) ||
+      cleanReqOrigin.endsWith('.vercel.app'); // Allow any Vercel preview domain
+
+    if (isAllowed) {
+      return callback(null, true);
+    }
+
+    console.warn(`[CORS] Blocked request from origin: "${origin}"`);
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true
 }));
 
