@@ -12,6 +12,7 @@ import LeaderboardModal from './components/LeaderboardModal.jsx';
 import PartyModal from './components/PartyModal.jsx';
 import PartyLobby from './components/PartyLobby.jsx';
 import PartyGame from './components/PartyGame.jsx';
+import AudioUnlockBanner from './components/AudioUnlockBanner.jsx';
 import { Shuffle, Loader2, CheckCircle2 } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
@@ -575,6 +576,7 @@ export default function App() {
 
   return (
     <>
+      <AudioUnlockBanner onUnlocked={() => {}} />
       <Header
         gameMode={gameMode}
         onToggleMode={handleToggleMode}
