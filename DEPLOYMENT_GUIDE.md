@@ -7,8 +7,8 @@ This guide provides step-by-step instructions for hosting **Song Guesser** 100% 
 ## 🏗 Architecture Overview
 
 Song Guesser consists of two main parts:
-1. **Frontend (`/client`)**: A Vite React single-page app. Can be hosted anywhere static files are served.
-2. **Backend (`/server`)**: An Express Node.js REST API with a local SQLite database (`songs.db`). Requires a persistent disk container environment.
+1. **Frontend (`/client`)**: A Vite React single-page app. Can be hosted anywhere static files are served (Vercel, Netlify, Cloudflare Pages).
+2. **Backend (`/server`)**: An Express Node.js REST API with a local SQLite database (`songs.db`) and a built-in cross-browser audio proxy (`/api/audio/proxy`). Requires a persistent disk container environment.
 
 ---
 
@@ -94,11 +94,11 @@ Click **Deploy**! Your frontend will be live at `https://your-project.vercel.app
 > If you deploy the backend on a serverless platform (like Vercel Functions or Netlify Functions) or a container without a persistent disk, **your SQLite `.db` file will reset or be deleted on every deploy/restart!**
 > - Always use Render with a **Render Disk** mounted at `/data`, or use a cloud database (like Supabase PostgreSQL or Turso SQLite) if migrating away from local SQLite.
 
-### 3. Mixed Content Errors (HTTPS vs HTTP)
-> [!WARNING]
+### 3. Mixed Content Errors & Cross-Browser Audio Proxying
+> [!IMPORTANT]
 > Vercel and Netlify enforce HTTPS (`https://...`).
 > - If your frontend is loaded via `HTTPS`, your backend URL (`VITE_API_BASE_URL`) **MUST also use `HTTPS`** (e.g. `https://song-guesser-backend.onrender.com`).
-> - If you accidentally use `http://`, the browser will block all API calls due to Mixed Content security rules.
+> - Browsers like **Zen Browser**, **Firefox**, and **Chrome** enforce strict CORS on media streams. Song Guesser includes an automated fallback proxy (`/api/audio/proxy?url=...`) that automatically proxies external CDN preview streams through your backend with proper `Access-Control-Allow-Origin: *` headers, ensuring 100% audio playback reliability across all browsers and devices!
 
 ### 4. CORS Misconfiguration
 > [!IMPORTANT]
@@ -114,7 +114,8 @@ Click **Deploy**! Your frontend will be live at `https://your-project.vercel.app
 
 - [ ] Visit `https://your-backend.onrender.com/health` → Should return `{"status":"ok"}`.
 - [ ] Visit your Vercel frontend URL → App loads cleanly without errors.
-- [ ] Click Play → Audio snippet plays correctly.
+- [ ] Click Play → Audio snippet plays correctly in Chrome, Firefox, and Zen Browser.
 - [ ] Submit a guess → Guess is evaluated and recorded.
-- [ ] Test Spotify Mode → Import a Spotify playlist URL and verify live progress streaming.
+- [ ] Test Unlimited Mode → Verify non-repeating song selection works across sessions.
+- [ ] Test Spotify Mode → Import a Spotify playlist URL and verify live background stream.
 - [ ] Set up UptimeRobot ping to `/health` to prevent server cold starts.
