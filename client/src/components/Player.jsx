@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, Volume2 } from 'lucide-react';
+import { Play, Pause, Volume2, AlertCircle } from 'lucide-react';
 
 export default function Player({ previewUrl, guessDurationsMs = [1000, 2000, 4000, 7000, 11000, 16000], currentIndex, isGameOver }) {
   const audioRef = useRef(null);
   const timerRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [audioError, setAudioError] = useState(false);
 
   // Maximum duration of the preview audio (standard 30s)
   const maxTotalMs = 30000;
@@ -22,6 +23,7 @@ export default function Player({ previewUrl, guessDurationsMs = [1000, 2000, 400
       audioRef.current.currentTime = 0;
       setIsPlaying(false);
       setCurrentTime(0);
+      setAudioError(false);
     }
   }, [currentIndex, isGameOver, previewUrl]);
 
@@ -44,18 +46,28 @@ export default function Player({ previewUrl, guessDurationsMs = [1000, 2000, 400
       setCurrentTime(0);
     };
 
+    const handleError = () => {
+      console.warn('Audio stream element error');
+      setAudioError(true);
+      setIsPlaying(false);
+    };
+
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('error', handleError);
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('error', handleError);
     };
   }, [activeMaxMs]);
 
   const togglePlay = () => {
     const audio = audioRef.current;
     if (!audio || !previewUrl) return;
+
+    setAudioError(false);
 
     if (isPlaying) {
       audio.pause();
@@ -77,7 +89,8 @@ export default function Player({ previewUrl, guessDurationsMs = [1000, 2000, 400
           setIsPlaying(false);
         }, Math.max(0, remainingMs));
       }).catch((err) => {
-        console.error('Audio play error:', err);
+        console.error('Audio play blocked or failed:', err);
+        setAudioError(true);
         setIsPlaying(false);
       });
     }
@@ -149,6 +162,13 @@ export default function Player({ previewUrl, guessDurationsMs = [1000, 2000, 400
           )}
         </div>
       </div>
+
+      {audioError && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, color: '#ef4444', fontSize: '0.8rem', marginTop: 4 }}>
+          <AlertCircle size={14} />
+          <span>Audio stream blocked by browser or network. Click Play to retry.</span>
+        </div>
+      )}
     </div>
   );
 }
