@@ -3,18 +3,15 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import db from './db.js';
 import { migrate } from './migrate.js';
-import { fetchTrackMetadata } from '../services/deezerClient.js';
 import { scheduleToday } from './scheduleToday.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
 export async function seed() {
   migrate();
 
-  console.log('Seeding songs database via Deezer API...');
+  console.log('Seeding songs database with pre-populated track metadata...');
   const seedListPath = path.resolve(__dirname, 'seedList.json');
   const seedList = JSON.parse(fs.readFileSync(seedListPath, 'utf-8'));
 
@@ -30,32 +27,28 @@ export async function seed() {
   `);
 
   let addedCount = 0;
-  for (const item of seedList) {
-    try {
-      console.log(`Fetching metadata for: ${item.title} - ${item.artist}`);
-      const meta = await fetchTrackMetadata(item.title, item.artist);
-      if (meta) {
+
+  for (let i = 0; i < seedList.length; i++) {
+    const item = seedList[i];
+    if (item.preview_url && item.title && item.artist) {
+      try {
         insertStmt.run(
-          meta.title,
-          meta.artist,
-          meta.album,
-          meta.artwork_url,
-          meta.preview_url,
-          meta.source,
-          meta.source_track_id
+          item.title,
+          item.artist,
+          item.album || 'Hit Track',
+          item.artwork_url || '',
+          item.preview_url,
+          item.source || 'deezer',
+          item.source_track_id || `seed_${i}_${item.title}`
         );
         addedCount++;
-        console.log(` Saved: ${meta.title} by ${meta.artist}`);
-      } else {
-        console.warn(` Could not find preview for: ${item.title} - ${item.artist}`);
+      } catch (err) {
+        console.warn(`Error inserting ${item.title}:`, err.message);
       }
-    } catch (err) {
-      console.error(` Error processing ${item.title}:`, err.message);
     }
-    await delay(150); // Respect Deezer rate limits
   }
 
-  console.log(`\nSeeding completed! Successfully added/updated ${addedCount} songs.`);
+  console.log(`\nSeeding completed! Successfully added/updated ${addedCount} songs instantly.`);
 
   // Auto schedule today's puzzle
   scheduleToday();
@@ -66,7 +59,7 @@ export async function seedIfEmpty() {
   try {
     const row = db.prepare('SELECT COUNT(*) as count FROM songs').get();
     if (!row || row.count === 0) {
-      console.log('Database empty! Auto-seeding initial songs on server boot...');
+      console.log('Database empty! Auto-seeding initial songs instantly on boot...');
       await seed();
     } else {
       scheduleToday();

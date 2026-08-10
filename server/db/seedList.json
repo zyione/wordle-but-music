@@ -1,52 +1,452 @@
 [
-  { "title": "Blinding Lights", "artist": "The Weeknd" },
-  { "title": "Shape of You", "artist": "Ed Sheeran" },
-  { "title": "Stay", "artist": "The Kid LAROI & Justin Bieber" },
-  { "title": "As It Was", "artist": "Harry Styles" },
-  { "title": "Levitating", "artist": "Dua Lipa" },
-  { "title": "Flowers", "artist": "Miley Cyrus" },
-  { "title": "Bad Guy", "artist": "Billie Eilish" },
-  { "title": "Starboy", "artist": "The Weeknd" },
-  { "title": "Uptown Funk", "artist": "Mark Ronson ft. Bruno Mars" },
-  { "title": "Someone Like You", "artist": "Adele" },
-  { "title": "Cruel Summer", "artist": "Taylor Swift" },
-  { "title": "Watermelon Sugar", "artist": "Harry Styles" },
-  { "title": "Closer", "artist": "The Chainsmokers" },
-  { "title": "Counting Stars", "artist": "OneRepublic" },
-  { "title": "Dance Monkey", "artist": "Tones and I" },
-  { "title": "Drivers License", "artist": "Olivia Rodrigo" },
-  { "title": "Heat Waves", "artist": "Glass Animals" },
-  { "title": "Sweater Weather", "artist": "The Neighbourhood" },
-  { "title": "Sunflower", "artist": "Post Malone & Swae Lee" },
-  { "title": "Riptide", "artist": "Vance Joy" },
-  { "title": "Despacito", "artist": "Luis Fonsi" },
-  { "title": "Shallow", "artist": "Lady Gaga & Bradley Cooper" },
-  { "title": "Perfect", "artist": "Ed Sheeran" },
-  { "title": "Believer", "artist": "Imagine Dragons" },
-  { "title": "Say You Won't Let Go", "artist": "James Arthur" },
-  { "title": "Lucid Dreams", "artist": "Juice WRLD" },
-  { "title": "7 Rings", "artist": "Ariana Grande" },
-  { "title": "Peaches", "artist": "Justin Bieber" },
-  { "title": "Good 4 U", "artist": "Olivia Rodrigo" },
-  { "title": "Unholy", "artist": "Sam Smith & Kim Petras" },
-  { "title": "Cold Heart", "artist": "Elton John & Dua Lipa" },
-  { "title": "Kill Bill", "artist": "SZA" },
-  { "title": "Calm Down", "artist": "Rema & Selena Gomez" },
-  { "title": "Vampire", "artist": "Olivia Rodrigo" },
-  { "title": "Greedy", "artist": "Tate McRae" },
-  { "title": "Espresso", "artist": "Sabrina Carpenter" },
-  { "title": "Houdini", "artist": "Dua Lipa" },
-  { "title": "Birds of a Feather", "artist": "Billie Eilish" },
-  { "title": "Take On Me", "artist": "a-ha" },
-  { "title": "Bohemian Rhapsody", "artist": "Queen" },
-  { "title": "Smells Like Teen Spirit", "artist": "Nirvana" },
-  { "title": "Wonderwall", "artist": "Oasis" },
-  { "title": "Mr. Brightside", "artist": "The Killers" },
-  { "title": "Billie Jean", "artist": "Michael Jackson" },
-  { "title": "Sweet Child O' Mine", "artist": "Guns N' Roses" },
-  { "title": "Hotel California", "artist": "Eagles" },
-  { "title": "Don't Stop Believin'", "artist": "Journey" },
-  { "title": "Seven Nation Army", "artist": "The White Stripes" },
-  { "title": "Shut Up and Dance", "artist": "WALK THE MOON" },
-  { "title": "Can't Stop the Feeling!", "artist": "Justin Timberlake" }
+  {
+    "title": "Blinding Lights",
+    "artist": "The Weeknd",
+    "album": "After Hours",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/fd00ebd6d30d7253f813dba3bb1c66a9/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/1/b/2/0/1b27825bf63c36edcdc7fac9f920214e.mp3?hdnea=exp=1786394017~acl=/api/1/1/1/b/2/0/1b27825bf63c36edcdc7fac9f920214e.mp3*~data=user_id=0,application_id=42~hmac=0c69a1e6017804d90d339b33b8bd412f218c695806707770abe2d5e4b7a7a434",
+    "source": "deezer",
+    "source_track_id": "908604612"
+  },
+  {
+    "title": "Shape of You",
+    "artist": "Ed Sheeran",
+    "album": "Shape of You",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/107c2b43f10c249077c1f7618563bb63/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/f/1/b/0/f1becf66c6264a6a0306fc47d47690b0.mp3?hdnea=exp=1786394017~acl=/api/1/1/f/1/b/0/f1becf66c6264a6a0306fc47d47690b0.mp3*~data=user_id=0,application_id=42~hmac=9172d14087f2ae79d6341900c0fd9c820378e06dd6959d295527019ee54e9447",
+    "source": "deezer",
+    "source_track_id": "139470659"
+  },
+  {
+    "title": "STAY",
+    "artist": "The Kid LAROI",
+    "album": "STAY",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/dd6fe7fa9267185c4b835bd4f155d1d2/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/c/2/7/0/c27d817565b9df8ab6393bb8202b58b9.mp3?hdnea=exp=1786394018~acl=/api/1/1/c/2/7/0/c27d817565b9df8ab6393bb8202b58b9.mp3*~data=user_id=0,application_id=42~hmac=96e2e4a2ea52c5a56ba5c81061898d12a3db3de50275ef7ff1345cdc3a4f46ce",
+    "source": "deezer",
+    "source_track_id": "1425844092"
+  },
+  {
+    "title": "As It Was",
+    "artist": "Harry Styles",
+    "album": "As It Was",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/b0e936124f59e669ddba02ebe5893f95/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/9/3/7/0/9372c78844baf74b7a06bd467151518a.mp3?hdnea=exp=1786394018~acl=/api/1/1/9/3/7/0/9372c78844baf74b7a06bd467151518a.mp3*~data=user_id=0,application_id=42~hmac=786975fe14f16eb1c5df000a972829fe07f9462016812ffa69f848074dbeb17e",
+    "source": "deezer",
+    "source_track_id": "1703487577"
+  },
+  {
+    "title": "Levitating",
+    "artist": "Dua Lipa",
+    "album": "Future Nostalgia",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/f8364f090ba04f1b19b381ec0390f3e4/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/9/c/5/0/9c570bc806fc277bb73ba024e956d057.mp3?hdnea=exp=1786394019~acl=/api/1/1/9/c/5/0/9c570bc806fc277bb73ba024e956d057.mp3*~data=user_id=0,application_id=42~hmac=124a4b5d98673834e48b38f095249b36b02d79de582a3440b097ac1e98b44e06",
+    "source": "deezer",
+    "source_track_id": "1124841682"
+  },
+  {
+    "title": "Flowers",
+    "artist": "Miley Cyrus",
+    "album": "Flowers",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/98610629a40996b61b3d24bd5ab8c2e1/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/c/a/1/0/ca19f3388408a917038cb083873c4ae1.mp3?hdnea=exp=1786394019~acl=/api/1/1/c/a/1/0/ca19f3388408a917038cb083873c4ae1.mp3*~data=user_id=0,application_id=42~hmac=c1266d7371c6b5cb889c2d1bcbf2531e0c18f53ec7c72c182b92b417c9969c10",
+    "source": "deezer",
+    "source_track_id": "2105158337"
+  },
+  {
+    "title": "bad guy",
+    "artist": "Billie Eilish",
+    "album": "WHEN WE ALL FALL ASLEEP, WHERE DO WE GO?",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/6630083f454d48eadb6a9b53f035d734/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/b/5/2/0/b528e07441caa4883c8d1c4b746bf47c.mp3?hdnea=exp=1786394020~acl=/api/1/1/b/5/2/0/b528e07441caa4883c8d1c4b746bf47c.mp3*~data=user_id=0,application_id=42~hmac=fd405642cd59595fbeb135d062e4ca0cdd081180429370c241ea5975fa6b6bbc",
+    "source": "deezer",
+    "source_track_id": "655095912"
+  },
+  {
+    "title": "Starboy",
+    "artist": "The Weeknd",
+    "album": "Starboy",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/134778e4c4f19ea71c82408300925a9a/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/3/c/1/0/3c19a82aeffd2f6f6adb63c4d8548e06.mp3?hdnea=exp=1786394020~acl=/api/1/1/3/c/1/0/3c19a82aeffd2f6f6adb63c4d8548e06.mp3*~data=user_id=0,application_id=42~hmac=f75461168d9f3ab47126ffec27dde82a447a85307ce326409c5db15994d0df46",
+    "source": "deezer",
+    "source_track_id": "136889400"
+  },
+  {
+    "title": "Uptown Funk (feat. Bruno Mars)",
+    "artist": "Mark Ronson",
+    "album": "Uptown Special",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/3734366a73152d0367a83a4b09fd163f/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/b/0/a/0/b0a30d99fddf73c172e0d3f308899dd5.mp3?hdnea=exp=1786394021~acl=/api/1/1/b/0/a/0/b0a30d99fddf73c172e0d3f308899dd5.mp3*~data=user_id=0,application_id=42~hmac=a3dd57f90c2bd7b3dd315a194cc8a64b2006be459947c24006047e4e8bb3541b",
+    "source": "deezer",
+    "source_track_id": "92734438"
+  },
+  {
+    "title": "Someone Like You",
+    "artist": "Adele",
+    "album": "21",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/dc1ce848d830ecc93521be5a78350364/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/c/f/6/0/cf61cfa01f653ad6b8696a81c6e4d747.mp3?hdnea=exp=1786394021~acl=/api/1/1/c/f/6/0/cf61cfa01f653ad6b8696a81c6e4d747.mp3*~data=user_id=0,application_id=42~hmac=c235ba02a6c4f9a86ff285dd5949dee57ba4f5a2b7d3b0ad22acb2008fe15bba",
+    "source": "deezer",
+    "source_track_id": "8086136"
+  },
+  {
+    "title": "Cruel Summer",
+    "artist": "Taylor Swift",
+    "album": "Lover",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/6111c5ab9729c8eac47883e4e50e9cf8/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/c/d/2/0/cd2322270b4d6a7f34448c642123b257.mp3?hdnea=exp=1786394022~acl=/api/1/1/c/d/2/0/cd2322270b4d6a7f34448c642123b257.mp3*~data=user_id=0,application_id=42~hmac=58111bf2da9468c05627292e8bfe7c40e94ed0c0552575b3fc046ceec4dd4f97",
+    "source": "deezer",
+    "source_track_id": "737967292"
+  },
+  {
+    "title": "Watermelon Sugar",
+    "artist": "Harry Styles",
+    "album": "Fine Line",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/346c524c15ecccbc4a8a78e8972a352c/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/f/7/5/0/f75672f3225537bd26bb33f0f8947618.mp3?hdnea=exp=1786394022~acl=/api/1/1/f/7/5/0/f75672f3225537bd26bb33f0f8947618.mp3*~data=user_id=0,application_id=42~hmac=864a789da06baee01595d9890be977111b354f4c7364b7f5ff399bd57ef2f0fc",
+    "source": "deezer",
+    "source_track_id": "830336922"
+  },
+  {
+    "title": "Closer",
+    "artist": "The Chainsmokers",
+    "album": "Closer",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/0a7b86a0e2f2bd3e41515adb83e3322b/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/0/d/6/0/0d63bac2a2dcdf064fc9987bf363cb76.mp3?hdnea=exp=1786394023~acl=/api/1/1/0/d/6/0/0d63bac2a2dcdf064fc9987bf363cb76.mp3*~data=user_id=0,application_id=42~hmac=8586c50502d277230c4b18de7d52e656d340b99303fcc9e105ba7cfe3aa101c3",
+    "source": "deezer",
+    "source_track_id": "129310248"
+  },
+  {
+    "title": "Counting Stars",
+    "artist": "OneRepublic",
+    "album": "Native",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/63bb716faf92942d967f5c053fc8720c/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/2/3/a/0/23a858028e22b9f41c1dffb932fdba03.mp3?hdnea=exp=1786394023~acl=/api/1/1/2/3/a/0/23a858028e22b9f41c1dffb932fdba03.mp3*~data=user_id=0,application_id=42~hmac=0d9106847c309f173e3a3023249fae24dfacb1b63eabf334644edd54115b74b4",
+    "source": "deezer",
+    "source_track_id": "78527795"
+  },
+  {
+    "title": "Dance Monkey",
+    "artist": "Tones And I",
+    "album": "The Kids Are Coming",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/5636a569737f8dad9a928f3d907c493a/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/b/5/9/0/b59d3c5a5127030c2d7255c557405f69.mp3?hdnea=exp=1786394023~acl=/api/1/1/b/5/9/0/b59d3c5a5127030c2d7255c557405f69.mp3*~data=user_id=0,application_id=42~hmac=77011f2f8e66b6a899f49cd8776c61d9aa4db34a720427439d3e200d32fe9fca",
+    "source": "deezer",
+    "source_track_id": "739870792"
+  },
+  {
+    "title": "drivers license",
+    "artist": "Olivia Rodrigo",
+    "album": "SOUR",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/e68da86fd7976135c2d2d1715afaef7c/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/4/d/5/0/4d54d919da63ae5ed6f2de3e05433317.mp3?hdnea=exp=1786394024~acl=/api/1/1/4/d/5/0/4d54d919da63ae5ed6f2de3e05433317.mp3*~data=user_id=0,application_id=42~hmac=48097736761f7ac385ead5c535a04eb16ace8622770c9f77a38d4f2fce23cb3d",
+    "source": "deezer",
+    "source_track_id": "1378342592"
+  },
+  {
+    "title": "Heat Waves",
+    "artist": "Glass Animals",
+    "album": "Dreamland",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/04ea51c6eb90a6208f2e47da861cf1a5/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/3/c/e/0/3ce23f319354c1eb009e7d11c57b75e2.mp3?hdnea=exp=1786394024~acl=/api/1/1/3/c/e/0/3ce23f319354c1eb009e7d11c57b75e2.mp3*~data=user_id=0,application_id=42~hmac=320be0112c28caa7d36e5c6bbbfbfd092567472f22153ea5064dc1b54516edee",
+    "source": "deezer",
+    "source_track_id": "1040154662"
+  },
+  {
+    "title": "Sweater Weather",
+    "artist": "The Neighbourhood",
+    "album": "I Love You.",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/6f55ff3cc5c478510c948024e95cf8d6/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/e/7/3/0/e73b0f2f9d4693c21c4df88ee6ea5d62.mp3?hdnea=exp=1786394025~acl=/api/1/1/e/7/3/0/e73b0f2f9d4693c21c4df88ee6ea5d62.mp3*~data=user_id=0,application_id=42~hmac=3615fb039a2822a0232c173883d4f982fb8c92859759d0d03693e5c00223d67a",
+    "source": "deezer",
+    "source_track_id": "66506871"
+  },
+  {
+    "title": "Sunflower (Spider-Man: Into the Spider-Verse)",
+    "artist": "Post Malone",
+    "album": "Hollywood's Bleeding",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/4642b8e3e0a89f92a6e2bfed13d8f31c/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/c/3/6/0/c369669ba9e7d8ef7ef51cbe23bd2413.mp3?hdnea=exp=1786394025~acl=/api/1/1/c/3/6/0/c369669ba9e7d8ef7ef51cbe23bd2413.mp3*~data=user_id=0,application_id=42~hmac=26822907f4d7c17e87a94241b8692101d3021a395a5eb4a77aafa9e43bc1d330",
+    "source": "deezer",
+    "source_track_id": "747399412"
+  },
+  {
+    "title": "Riptide",
+    "artist": "Vance Joy",
+    "album": "Dream Your Life Away",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/d3f67e81d134e4036fd2e68a062210c4/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/f/0/c/0/f0ccc7edbfc49aac9bd8a5bdb1f1266f.mp3?hdnea=exp=1786394026~acl=/api/1/1/f/0/c/0/f0ccc7edbfc49aac9bd8a5bdb1f1266f.mp3*~data=user_id=0,application_id=42~hmac=c6457dd7d480ecbe403fbe1894904f383ee8856a92e77d909c7a0f75dfa77793",
+    "source": "deezer",
+    "source_track_id": "83841464"
+  },
+  {
+    "title": "Despacito",
+    "artist": "Luis Fonsi",
+    "album": "VIDA",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/7985ef4ccd9e66af2fc3c18d629689aa/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/c/6/8/0/c68396f0684b99d05f5b353fb3c4c888.mp3?hdnea=exp=1786394026~acl=/api/1/1/c/6/8/0/c68396f0684b99d05f5b353fb3c4c888.mp3*~data=user_id=0,application_id=42~hmac=173c00dd068b5069b3c115969de2dc1aaadda00064f4c5db81978a05404b8698",
+    "source": "deezer",
+    "source_track_id": "623698142"
+  },
+  {
+    "title": "Shallow Instrumental Version (Originally Performed by Lady Gaga and Bradley Cooper)",
+    "artist": "Unplugged Backing Tracks",
+    "album": "Shallow Instrumental Version (Originally Performed by Lady Gaga and Bradley Cooper)",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/7bdb9e68769b9707b8f6a5fee2348b10/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/e/a/0/0/ea0a28596f5497ce95abc568bff9b6cd.mp3?hdnea=exp=1786394027~acl=/api/1/1/e/a/0/0/ea0a28596f5497ce95abc568bff9b6cd.mp3*~data=user_id=0,application_id=42~hmac=7cf11325e9c8e8763c7ee98c26e2c15f308f050aa2b362351c455b1b67ad94f0",
+    "source": "deezer",
+    "source_track_id": "641824662"
+  },
+  {
+    "title": "Perfect",
+    "artist": "Ed Sheeran",
+    "album": "÷ (Deluxe)",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/000a9228cecfcc7c2093d9cd7bb66447/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/f/1/3/0/f1325f089fd1f0f72b291014f20dcc4a.mp3?hdnea=exp=1786394027~acl=/api/1/1/f/1/3/0/f1325f089fd1f0f72b291014f20dcc4a.mp3*~data=user_id=0,application_id=42~hmac=fbf3d404e75c0e9bbbea76f787ffa8919629d86df4bfdadeb141bfbb4f225bcb",
+    "source": "deezer",
+    "source_track_id": "142986206"
+  },
+  {
+    "title": "Believer",
+    "artist": "Imagine Dragons",
+    "album": "Evolve",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/247b228179aea3b083eef43522b78b45/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/c/b/e/0/cbe9e3bf5b7fb4c15dc76f53c2221559.mp3?hdnea=exp=1786394027~acl=/api/1/1/c/b/e/0/cbe9e3bf5b7fb4c15dc76f53c2221559.mp3*~data=user_id=0,application_id=42~hmac=abc2c57a4d2f2c772ea980fae0b5c82ec660964bacd97d21369671ff7d8b61ef",
+    "source": "deezer",
+    "source_track_id": "528330441"
+  },
+  {
+    "title": "Say You Won't Let Go",
+    "artist": "James Arthur",
+    "album": "Say You Won't Let Go",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/c80a5faa09d5e77071217ad3fcfd699e/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/6/8/5/0/68566b3bcd99133cd4a54ae8a1378429.mp3?hdnea=exp=1786394028~acl=/api/1/1/6/8/5/0/68566b3bcd99133cd4a54ae8a1378429.mp3*~data=user_id=0,application_id=42~hmac=2e7ebefcc6ca16d1b73dea5acc907b0beff9ef172edc2565a4efd44f08857fca",
+    "source": "deezer",
+    "source_track_id": "131742260"
+  },
+  {
+    "title": "Lucid Dreams",
+    "artist": "Juice WRLD",
+    "album": "Goodbye & Good Riddance",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/f8c4db1b0f346d6e4b1558f734ad4523/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/8/4/4/0/8444f8424a4ac66fc032f7b42ecf06eb.mp3?hdnea=exp=1786394028~acl=/api/1/1/8/4/4/0/8444f8424a4ac66fc032f7b42ecf06eb.mp3*~data=user_id=0,application_id=42~hmac=37417061227a81593f0ddb47a21736b987f95d5f4f4648d9175289d250b39163",
+    "source": "deezer",
+    "source_track_id": "601837422"
+  },
+  {
+    "title": "7 rings",
+    "artist": "Ariana Grande",
+    "album": "thank u, next",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/49e86e935da829b44cb5ffae16826e55/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/e/2/2/0/e2210dc9ffd5633719e4f695d42e4554.mp3?hdnea=exp=1786394029~acl=/api/1/1/e/2/2/0/e2210dc9ffd5633719e4f695d42e4554.mp3*~data=user_id=0,application_id=42~hmac=bd81fe0e99ada342c0d56fa17dc4785d0a8d08cf9c765bc1e9689c0c180b8d15",
+    "source": "deezer",
+    "source_track_id": "629899842"
+  },
+  {
+    "title": "Peaches",
+    "artist": "Justin Bieber",
+    "album": "Justice",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/87468622c8e7ac9dce7b541be136aa4c/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/f/3/f/0/f3fcfb36e1d7c904d8f1bab0497c4d6c.mp3?hdnea=exp=1786394029~acl=/api/1/1/f/3/f/0/f3fcfb36e1d7c904d8f1bab0497c4d6c.mp3*~data=user_id=0,application_id=42~hmac=a5d91a957891e1cad0109232c6801705305026bc5fbd199a99e9b4c1f96fd599",
+    "source": "deezer",
+    "source_track_id": "1280165222"
+  },
+  {
+    "title": "good 4 u",
+    "artist": "Olivia Rodrigo",
+    "album": "SOUR",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/e68da86fd7976135c2d2d1715afaef7c/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/f/8/7/0/f87c0d1c4c9e6f80c68c0fad96621642.mp3?hdnea=exp=1786394030~acl=/api/1/1/f/8/7/0/f87c0d1c4c9e6f80c68c0fad96621642.mp3*~data=user_id=0,application_id=42~hmac=b3c7d8fb4ba58f2a2d1647b8b4145dcbb78d02c7ec535adca10f18208ea00f47",
+    "source": "deezer",
+    "source_track_id": "1378342622"
+  },
+  {
+    "title": "Unholy",
+    "artist": "Sam Smith",
+    "album": "Unholy",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/bd454eaa5398663a32af7fca8633b245/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/3/5/2/0/352138847861c03946c2cac89d2ad77d.mp3?hdnea=exp=1786394030~acl=/api/1/1/3/5/2/0/352138847861c03946c2cac89d2ad77d.mp3*~data=user_id=0,application_id=42~hmac=dcef89e10aedeebc73c987a1877f0feb3ab8fbf23f058f294bc247973bfe71a0",
+    "source": "deezer",
+    "source_track_id": "1905751117"
+  },
+  {
+    "title": "Cold Heart (Acoustic)",
+    "artist": "Elton John",
+    "album": "Cold Heart (Acoustic)",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/0688a24c3ec63edbbc173eff549c2dba/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/d/c/8/0/dc8e96349bab1cb1ff6e296739195c75.mp3?hdnea=exp=1786394030~acl=/api/1/1/d/c/8/0/dc8e96349bab1cb1ff6e296739195c75.mp3*~data=user_id=0,application_id=42~hmac=ace20ab34317d89fd16ba1bd68504239c14da4a24a647cfd03c13050904e7e03",
+    "source": "deezer",
+    "source_track_id": "1516899042"
+  },
+  {
+    "title": "Kill Bill",
+    "artist": "SZA",
+    "album": "SOS",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/a3c3b409f0d5bd781821ec0fd79d5b15/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/6/b/0/0/6b010c509243ab6d7546f28a4fddd349.mp3?hdnea=exp=1786394031~acl=/api/1/1/6/b/0/0/6b010c509243ab6d7546f28a4fddd349.mp3*~data=user_id=0,application_id=42~hmac=8dffab8a3d246d077d3ef6d965852c4ad66fd1e1807a19dcd89dc6c039fdc979",
+    "source": "deezer",
+    "source_track_id": "2055292027"
+  },
+  {
+    "title": "Calm Down",
+    "artist": "Rema",
+    "album": "Calm Down",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/07d4291391724a969f243406cc92be66/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/3/4/9/0/34902942bf39f4d4c794af249ecf9124.mp3?hdnea=exp=1786394031~acl=/api/1/1/3/4/9/0/34902942bf39f4d4c794af249ecf9124.mp3*~data=user_id=0,application_id=42~hmac=5d480d812871d662068a64b70a62c0766bfc27225f809ccf05cb93af8a28c73a",
+    "source": "deezer",
+    "source_track_id": "1873297197"
+  },
+  {
+    "title": "vampire",
+    "artist": "Olivia Rodrigo",
+    "album": "GUTS",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/4bb79214365c0049e031f5e2caae4752/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/7/b/2/0/7b224890fd56400faddeadf5bcdb748c.mp3?hdnea=exp=1786394032~acl=/api/1/1/7/b/2/0/7b224890fd56400faddeadf5bcdb748c.mp3*~data=user_id=0,application_id=42~hmac=e8ac6c999fbfa512774148a9cad47579a3dfa656e0275f1d7b9f087a174f2044",
+    "source": "deezer",
+    "source_track_id": "2440763155"
+  },
+  {
+    "title": "greedy",
+    "artist": "Tate McRae",
+    "album": "greedy",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/ef25b6bec265332a059879f45d33cd7e/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/b/2/c/0/b2c0972841d7abdb3856b996dc864a8e.mp3?hdnea=exp=1786394032~acl=/api/1/1/b/2/c/0/b2c0972841d7abdb3856b996dc864a8e.mp3*~data=user_id=0,application_id=42~hmac=da624b169db6ba9bd34b01154a6478c4c91be6b7abea48885d947db9b3aab73f",
+    "source": "deezer",
+    "source_track_id": "2444176345"
+  },
+  {
+    "title": "Espresso",
+    "artist": "Sabrina Carpenter",
+    "album": "Espresso",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/e3221287a77eb262944e6528766eeba4/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/1/7/a/0/17a21c40ce4af3ac9514aac756403188.mp3?hdnea=exp=1786394033~acl=/api/1/1/1/7/a/0/17a21c40ce4af3ac9514aac756403188.mp3*~data=user_id=0,application_id=42~hmac=b6a5dd162bad342f4b3b13abb916877e2aa517b8a8c0264c756d0830d813e0cb",
+    "source": "deezer",
+    "source_track_id": "2743578151"
+  },
+  {
+    "title": "Houdini",
+    "artist": "Dua Lipa",
+    "album": "Houdini",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/12c05200e9097af48e0ad4fc259cee25/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/3/6/7/0/367e45ecbf07a341e248b400f51fc544.mp3?hdnea=exp=1786394033~acl=/api/1/1/3/6/7/0/367e45ecbf07a341e248b400f51fc544.mp3*~data=user_id=0,application_id=42~hmac=1c0f8dc6fd9322fc9df86d0d6d13bfbef871dacad289694be011839b4a151c56",
+    "source": "deezer",
+    "source_track_id": "2525537871"
+  },
+  {
+    "title": "BIRDS OF A FEATHER",
+    "artist": "Billie Eilish",
+    "album": "HIT ME HARD AND SOFT",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/5d284b31cb9ddeb1a0c79aede5a94e1c/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/5/e/0/0/5e0fb99f6f1e0f18ab70a4c0d18efa5c.mp3?hdnea=exp=1786394033~acl=/api/1/1/5/e/0/0/5e0fb99f6f1e0f18ab70a4c0d18efa5c.mp3*~data=user_id=0,application_id=42~hmac=271329d4e46e7b8e32fb3fa645b09e1cc8f7f18e31b34d7a82140321824f82d8",
+    "source": "deezer",
+    "source_track_id": "2801558052"
+  },
+  {
+    "title": "Take on Me",
+    "artist": "a-ha",
+    "album": "Hunting High and Low",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/e0ce8977ab98d73bcea00fc838ece034/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/b/1/9/0/b19c969e9d7193a3fa7e5880fed2aefb.mp3?hdnea=exp=1786394034~acl=/api/1/1/b/1/9/0/b19c969e9d7193a3fa7e5880fed2aefb.mp3*~data=user_id=0,application_id=42~hmac=7711faa8670565cad21b34453d10c00b692296348c58ed18d7748fb2685bd29a",
+    "source": "deezer",
+    "source_track_id": "664107"
+  },
+  {
+    "title": "Bohemian Rhapsody",
+    "artist": "Queen",
+    "album": "A Night At The Opera",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/0b56f4eee05fa1ea753c5654b2cdb70c/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/5/f/9/0/5f9a6a2ea1876e6d07c4b7feefa99951.mp3?hdnea=exp=1786394034~acl=/api/1/1/5/f/9/0/5f9a6a2ea1876e6d07c4b7feefa99951.mp3*~data=user_id=0,application_id=42~hmac=2d4789986fd40d90d5b156ae011797ea979086331df6d12acfe7ed9e14aa93b3",
+    "source": "deezer",
+    "source_track_id": "4091937401"
+  },
+  {
+    "title": "Smells Like Teen Spirit",
+    "artist": "Nirvana",
+    "album": "Nevermind (Remastered)",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/f0282817b697279e56df13909962a54a/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/3/4/b/0/34bad352aa1aa0f8eecbbc9c27a40eaf.mp3?hdnea=exp=1786394035~acl=/api/1/1/3/4/b/0/34bad352aa1aa0f8eecbbc9c27a40eaf.mp3*~data=user_id=0,application_id=42~hmac=b743e455e8719ce57bc7a0af8ce9eb69ab8ed7db2557c9e0ddd915d83690c1e1",
+    "source": "deezer",
+    "source_track_id": "13791930"
+  },
+  {
+    "title": "Wonderwall (Live from Dublin, 16 August '25)",
+    "artist": "Oasis",
+    "album": "Wonderwall (Live from Dublin, 16 August '25)",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/bb156ee643f23c4ba8d991b923f10015/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/a/8/4/0/a8430c0e0828690eb834d52736ba336a.mp3?hdnea=exp=1786394035~acl=/api/1/1/a/8/4/0/a8430c0e0828690eb834d52736ba336a.mp3*~data=user_id=0,application_id=42~hmac=7cf7bd171cbd2746e5d1e554dd97312756c53d88826f35dc990ad60fd3c7f5c6",
+    "source": "deezer",
+    "source_track_id": "3537756951"
+  },
+  {
+    "title": "Mr. Brightside",
+    "artist": "The Killers",
+    "album": "Nu Rock",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/ecff532dd84c6538099b58baefccb8fb/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/0/f/2/0/0f2afffd5ba40fc616ee562cde64b94f.mp3?hdnea=exp=1786394036~acl=/api/1/1/0/f/2/0/0f2afffd5ba40fc616ee562cde64b94f.mp3*~data=user_id=0,application_id=42~hmac=d12e789f1c1a784bda1ca36e3a97a41d2b331859a8eb86566f02c31202246394",
+    "source": "deezer",
+    "source_track_id": "953097"
+  },
+  {
+    "title": "Billie Jean",
+    "artist": "Michael Jackson",
+    "album": "Michael Jackson's This Is It",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/a0ad67d1beb761f2cb9f8b60e5bcf07a/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/e/6/e/0/e6e0f8717b1e6353e2abf797c6849889.mp3?hdnea=exp=1786394036~acl=/api/1/1/e/6/e/0/e6e0f8717b1e6353e2abf797c6849889.mp3*~data=user_id=0,application_id=42~hmac=d389c50a5389cab192668c1d267d56525a97ed54dbfe4c15f2801d512cfd6292",
+    "source": "deezer",
+    "source_track_id": "4603408"
+  },
+  {
+    "title": "Sweet Child O' Mine",
+    "artist": "Guns N' Roses",
+    "album": "Appetite For Destruction (Super Deluxe Edition)",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/8bfe7b3b0985d9ff0751090fb2b6f73f/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/5/9/1/0/59115eec88ea0bc7742eaba93facf49b.mp3?hdnea=exp=1786394037~acl=/api/1/1/5/9/1/0/59115eec88ea0bc7742eaba93facf49b.mp3*~data=user_id=0,application_id=42~hmac=f5a682bf2d1b60d1783c1fc488ceb3af9aeb3e14819f730d7ea084fac76ea5ba",
+    "source": "deezer",
+    "source_track_id": "518458172"
+  },
+  {
+    "title": "Hotel California (2013 Remaster)",
+    "artist": "Eagles",
+    "album": "Hotel California (40th Anniversary Expanded Edition)",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/7a6c7b49cfdaf4ee233f66c3070d2f40/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/d/e/0/0/de0b52925103149e94a7123d0c0cb6c4.mp3?hdnea=exp=1786394037~acl=/api/1/1/d/e/0/0/de0b52925103149e94a7123d0c0cb6c4.mp3*~data=user_id=0,application_id=42~hmac=5816831e7f446446bb5f3ca0758ec191ed0d28177193e2a8a51cabd1e9b16c21",
+    "source": "deezer",
+    "source_track_id": "426703682"
+  },
+  {
+    "title": "Don't Stop Believin'",
+    "artist": "Journey",
+    "album": "The Essential Journey",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/b4ec4a1a920d792dd7d8d15dc29f0a39/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/d/2/0/0/d2075fdf5e55ef0a8f8383cefd6fc51b.mp3?hdnea=exp=1786394038~acl=/api/1/1/d/2/0/0/d2075fdf5e55ef0a8f8383cefd6fc51b.mp3*~data=user_id=0,application_id=42~hmac=cc6b9c71a5db3e6ab6903994c831287a01bb405882dba81bc80bdca43b87819f",
+    "source": "deezer",
+    "source_track_id": "625643"
+  },
+  {
+    "title": "Seven Nation Army",
+    "artist": "The White Stripes",
+    "album": "The White Stripes Greatest Hits",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/ed0929a4c44d77c4dc524a10748fc2f6/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/7/d/e/0/7de8805c1993e802810d7ca37a615f81.mp3?hdnea=exp=1786394038~acl=/api/1/1/7/d/e/0/7de8805c1993e802810d7ca37a615f81.mp3*~data=user_id=0,application_id=42~hmac=55da47d96f81a02c9cda9e7f3651ef46939ea21bfa1477878a9fda13158e7013",
+    "source": "deezer",
+    "source_track_id": "1153182282"
+  },
+  {
+    "title": "Shut Up and Dance",
+    "artist": "WALK THE MOON",
+    "album": "TALKING IS HARD",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/4fd07406ef0cfa6dab31fd68d71eb2b7/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/a/9/b/0/a9bb99c03f2ecfde508ccc9ffa60421f.mp3?hdnea=exp=1786394038~acl=/api/1/1/a/9/b/0/a9bb99c03f2ecfde508ccc9ffa60421f.mp3*~data=user_id=0,application_id=42~hmac=0d83d9a239b34e0088d5fc2897fc6f9a77ef2de1a4e34fd03cc2968ccfef84bc",
+    "source": "deezer",
+    "source_track_id": "90326361"
+  },
+  {
+    "title": "CAN'T STOP THE FEELING! (from DreamWorks Animation's \"TROLLS\")",
+    "artist": "Justin Timberlake",
+    "album": "CAN'T STOP THE FEELING! (from DreamWorks Animation's \"TROLLS\")",
+    "artwork_url": "https://cdn-images.dzcdn.net/images/cover/209aa560e3b5fbe679e91887fc0c7332/500x500-000000-80-0-0.jpg",
+    "preview_url": "https://cdnt-preview.dzcdn.net/api/1/1/9/4/b/0/94b08535e1d86650c891c720af3aa77a.mp3?hdnea=exp=1786394039~acl=/api/1/1/9/4/b/0/94b08535e1d86650c891c720af3aa77a.mp3*~data=user_id=0,application_id=42~hmac=f8b56d11456943d7cfbc9e295994ec343a49ccf3ef7a287f5a021471c9290d65",
+    "source": "deezer",
+    "source_track_id": "124237488"
+  }
 ]
