@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
+import { createClient } from '@supabase/supabase-js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,7 +38,7 @@ function saveDb() {
   }
 }
 
-// Clean wrapper mimicking better-sqlite3 API
+// Clean wrapper mimicking better-sqlite3 API for local & test environments
 const db = {
   exec: (sql) => {
     dbInstance.exec(sql);
@@ -82,5 +83,11 @@ const db = {
     };
   }
 };
+
+// Supabase client instance (optional when SUPABASE_URL & SUPABASE_KEY are provided in production)
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
+export const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
 export default db;

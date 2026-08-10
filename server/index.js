@@ -9,12 +9,15 @@ import puzzleRoutes from './routes/puzzle.js';
 import searchRoutes from './routes/search.js';
 import guessRoutes from './routes/guess.js';
 import adminRoutes from './routes/admin.js';
+import spotifyRoutes from './routes/spotify.js';
+import audioProxyRoutes from './routes/audioProxy.js';
+import userRoutes from './routes/users.js';
+import leaderboardRoutes from './routes/leaderboard.js';
+import partyRoutes from './routes/party.js';
+
 import { migrate } from './db/migrate.js';
 import { scheduleToday } from './db/scheduleToday.js';
 import { seedIfEmpty } from './db/seed.js';
-
-import spotifyRoutes from './routes/spotify.js';
-import audioProxyRoutes from './routes/audioProxy.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -68,6 +71,9 @@ app.use('/api', searchRoutes);
 app.use('/api', guessRoutes);
 app.use('/api', spotifyRoutes);
 app.use('/api', audioProxyRoutes);
+app.use('/api', userRoutes);
+app.use('/api', leaderboardRoutes);
+app.use('/api', partyRoutes);
 app.use('/', adminRoutes);
 
 // Healthcheck

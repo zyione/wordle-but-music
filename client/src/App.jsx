@@ -7,9 +7,14 @@ import ResultModal from './components/ResultModal.jsx';
 import HelpModal from './components/HelpModal.jsx';
 import StatsModal from './components/StatsModal.jsx';
 import SpotifyModal, { saveCachedPlaylist } from './components/SpotifyModal.jsx';
+import ProfileModal from './components/ProfileModal.jsx';
+import LeaderboardModal from './components/LeaderboardModal.jsx';
+import PartyModal from './components/PartyModal.jsx';
+import PartyLobby from './components/PartyLobby.jsx';
+import PartyGame from './components/PartyGame.jsx';
 import { Shuffle, Loader2, CheckCircle2 } from 'lucide-react';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://wordle-but-music.onrender.com';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 
 function getAnonId() {
   let id = localStorage.getItem('song_guesser_anon_id');
@@ -42,20 +47,32 @@ function saveLocalStats(isWin) {
 }
 
 export default function App() {
-  const [gameMode, setGameMode] = useState('daily'); // 'daily' | 'unlimited' | 'spotify'
-  const [spotifyPlaylist, setSpotifyPlaylist] = useState(null); // { playlistName, songIds: [...] }
+  const [gameMode, setGameMode] = useState('daily'); // 'daily' | 'unlimited' | 'spotify' | 'party'
+  const [spotifyPlaylist, setSpotifyPlaylist] = useState(null);
   const [showSpotifyModal, setShowSpotifyModal] = useState(false);
-  const [playedSongIds, setPlayedSongIds] = useState([]); // Track played songs in session to prevent repeats
-  const [bgImportStatus, setBgImportStatus] = useState(null); // { isImporting, playlistName, current, total, readyCount, isComplete }
+  const [playedSongIds, setPlayedSongIds] = useState([]);
+  const [bgImportStatus, setBgImportStatus] = useState(null);
 
+  // User profile & Modals
+  const [userProfile, setUserProfile] = useState(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showLeaderboardModal, setShowLeaderboardModal] = useState(false);
+  const [showPartyModal, setShowPartyModal] = useState(false);
+
+  // Party mode state
+  const [partyState, setPartyState] = useState(null);
+
+  // Puzzle gameplay state
   const [puzzleData, setPuzzleData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [startTime, setStartTime] = useState(Date.now());
 
   const [guesses, setGuesses] = useState([]);
   const [isGameOver, setIsGameOver] = useState(false);
   const [isSolved, setIsSolved] = useState(false);
   const [targetSong, setTargetSong] = useState(null);
+  const [gameScore, setGameScore] = useState(0);
 
   const [showHelp, setShowHelp] = useState(false);
   const [showStats, setShowStats] = useState(false);
@@ -64,11 +81,50 @@ export default function App() {
 
   const anonId = getAnonId();
 
+  // Load User Profile on mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/users/profile?anonId=${anonId}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.profile) {
+            setUserProfile(data.profile);
+          } else {
+            setShowProfileModal(true);
+          }
+        }
+      } catch (err) {
+        console.warn('Profile fetch warning:', err);
+      }
+    };
+    fetchProfile();
+  }, [anonId]);
+
+  const handleSaveProfile = async ({ displayName, avatarColor }) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/users/profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ anonId, displayName, avatarColor })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUserProfile(data);
+      }
+    } catch (err) {
+      console.error('Error saving profile:', err);
+    }
+  };
+
   // Load puzzle based on active mode
   const fetchPuzzle = async (mode, customSpotifyIds = null, currentExcludes = playedSongIds) => {
+    if (mode === 'party') return;
+
     try {
       setLoading(true);
       setError(null);
+      setStartTime(Date.now());
 
       let endpoint = '/api/puzzle/today';
 
@@ -112,12 +168,14 @@ export default function App() {
           setIsGameOver(parsed.isGameOver || false);
           setIsSolved(parsed.isSolved || false);
           setTargetSong(parsed.targetSong || null);
+          setGameScore(parsed.score || 0);
           if (parsed.isGameOver) setShowResult(true);
         } else {
           setGuesses([]);
           setIsGameOver(false);
           setIsSolved(false);
           setTargetSong(null);
+          setGameScore(0);
           setShowResult(false);
         }
       } else {
@@ -125,6 +183,7 @@ export default function App() {
         setIsGameOver(false);
         setIsSolved(false);
         setTargetSong(null);
+        setGameScore(0);
         setShowResult(false);
       }
     } catch (err) {
@@ -136,11 +195,22 @@ export default function App() {
   };
 
   useEffect(() => {
-    setPlayedSongIds([]);
-    fetchPuzzle(gameMode, null, []);
+    if (gameMode !== 'party') {
+      setPlayedSongIds([]);
+      fetchPuzzle(gameMode, null, []);
+    }
   }, [gameMode]);
 
   const handleToggleMode = (newMode) => {
+    if (newMode === 'party') {
+      if (!partyState) {
+        setShowPartyModal(true);
+      } else {
+        setGameMode('party');
+      }
+      return;
+    }
+
     if (newMode === 'spotify') {
       setShowSpotifyModal(true);
       if (spotifyPlaylist) {
@@ -151,6 +221,67 @@ export default function App() {
     setGameMode(newMode);
   };
 
+  // Party mode actions
+  const handleCreateParty = async (partyConfig) => {
+    const res = await fetch(`${API_BASE_URL}/api/party/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        hostAnonId: anonId,
+        displayName: userProfile?.displayName || 'Host',
+        avatarColor: userProfile?.avatarColor || '#3b82f6',
+        ...partyConfig
+      })
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to create party room');
+    }
+    const state = await res.json();
+    setPartyState(state);
+    setGameMode('party');
+    setShowPartyModal(false);
+  };
+
+  const handleJoinParty = async (code) => {
+    const res = await fetch(`${API_BASE_URL}/api/party/join`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        partyCode: code,
+        anonId,
+        displayName: userProfile?.displayName || 'Player',
+        avatarColor: userProfile?.avatarColor || '#ec4899'
+      })
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to join party');
+    }
+    const state = await res.json();
+    setPartyState(state);
+    setGameMode('party');
+    setShowPartyModal(false);
+  };
+
+  const handleStartPartyGame = async () => {
+    if (!partyState?.code) return;
+    const res = await fetch(`${API_BASE_URL}/api/party/${partyState.code}/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hostAnonId: anonId })
+    });
+    if (res.ok) {
+      const state = await res.json();
+      setPartyState(state);
+    }
+  };
+
+  const handleLeaveParty = () => {
+    setPartyState(null);
+    setGameMode('daily');
+  };
+
   const handleSelectCached = (playlist) => {
     setSpotifyPlaylist(playlist);
     setGameMode('spotify');
@@ -158,7 +289,7 @@ export default function App() {
     fetchPuzzle('spotify', playlist.songIds, []);
   };
 
-  // Persistent root background stream importer
+  // Background stream importer
   const handleStartImport = async (playlistUrl) => {
     try {
       setBgImportStatus({
@@ -176,9 +307,7 @@ export default function App() {
         body: JSON.stringify({ playlistUrl })
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to import playlist');
-      }
+      if (!response.ok) throw new Error('Failed to import playlist');
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder('utf-8');
@@ -207,33 +336,16 @@ export default function App() {
                 readyCount: 0,
                 isComplete: false
               });
-            } else if (msg.type === 'progress') {
+            } else if (msg.type === 'progress' || msg.type === 'first_match') {
               setBgImportStatus({
                 isImporting: true,
                 playlistName: msg.playlistName,
-                current: msg.current,
-                total: msg.total,
+                current: msg.current || 0,
+                total: msg.total || 50,
                 readyCount: msg.importedTracksCount,
                 isComplete: false
               });
 
-              if (msg.songIds && msg.songIds.length > 0) {
-                const updatedPl = {
-                  playlistId: msg.playlistId,
-                  playlistName: msg.playlistName,
-                  importedTracksCount: msg.importedTracksCount,
-                  songIds: msg.songIds
-                };
-                setSpotifyPlaylist(updatedPl);
-
-                if (!hasLaunchedGame) {
-                  hasLaunchedGame = true;
-                  setGameMode('spotify');
-                  setPlayedSongIds([]);
-                  fetchPuzzle('spotify', msg.songIds, []);
-                }
-              }
-            } else if (msg.type === 'first_match') {
               if (msg.songIds && msg.songIds.length > 0) {
                 const updatedPl = {
                   playlistId: msg.playlistId,
@@ -268,9 +380,7 @@ export default function App() {
                 isComplete: true
               });
 
-              setTimeout(() => {
-                setBgImportStatus(null);
-              }, 3500);
+              setTimeout(() => setBgImportStatus(null), 3500);
             }
           } catch (lineErr) {
             console.warn('Line parse error:', lineErr);
@@ -284,14 +394,15 @@ export default function App() {
   };
 
   // Save game state for daily mode
-  const saveDailyState = (newGuesses, gameOver, solved, song) => {
+  const saveDailyState = (newGuesses, gameOver, solved, song, score) => {
     if (gameMode !== 'daily' || !puzzleData?.puzzleDate) return;
     const storageKey = `song_guesser_${puzzleData.puzzleDate}`;
     localStorage.setItem(storageKey, JSON.stringify({
       guesses: newGuesses,
       isGameOver: gameOver,
       isSolved: solved,
-      targetSong: song
+      targetSong: song,
+      score
     }));
   };
 
@@ -299,6 +410,7 @@ export default function App() {
     if (!puzzleData || isGameOver) return;
 
     try {
+      const timeTakenMs = Date.now() - startTime;
       const bodyPayload = {
         puzzleId: puzzleData.puzzleId,
         anonId,
@@ -306,7 +418,8 @@ export default function App() {
         isSkip: false,
         mode: gameMode,
         targetSongId: puzzleData.targetSongId,
-        currentGuessesCount: guesses.length
+        currentGuessesCount: guesses.length,
+        timeTakenMs
       };
 
       const res = await fetch(`${API_BASE_URL}/api/guess`, {
@@ -332,12 +445,13 @@ export default function App() {
         setIsGameOver(true);
         setIsSolved(data.isCorrect);
         setTargetSong(data.targetSong);
+        setGameScore(data.score || 0);
         const updatedStats = saveLocalStats(data.isCorrect);
         setStats(updatedStats);
-        saveDailyState(nextGuesses, true, data.isCorrect, data.targetSong);
+        saveDailyState(nextGuesses, true, data.isCorrect, data.targetSong, data.score || 0);
         setTimeout(() => setShowResult(true), 600);
       } else {
-        saveDailyState(nextGuesses, false, false, null);
+        saveDailyState(nextGuesses, false, false, null, 0);
       }
     } catch (err) {
       console.error('Error submitting guess:', err);
@@ -348,6 +462,7 @@ export default function App() {
     if (!puzzleData || isGameOver) return;
 
     try {
+      const timeTakenMs = Date.now() - startTime;
       const bodyPayload = {
         puzzleId: puzzleData.puzzleId,
         anonId,
@@ -355,7 +470,8 @@ export default function App() {
         isSkip: true,
         mode: gameMode,
         targetSongId: puzzleData.targetSongId,
-        currentGuessesCount: guesses.length
+        currentGuessesCount: guesses.length,
+        timeTakenMs
       };
 
       const res = await fetch(`${API_BASE_URL}/api/guess`, {
@@ -381,12 +497,13 @@ export default function App() {
         setIsGameOver(true);
         setIsSolved(false);
         setTargetSong(data.targetSong);
+        setGameScore(data.score || 0);
         const updatedStats = saveLocalStats(false);
         setStats(updatedStats);
-        saveDailyState(nextGuesses, true, false, data.targetSong);
+        saveDailyState(nextGuesses, true, false, data.targetSong, data.score || 0);
         setTimeout(() => setShowResult(true), 600);
       } else {
-        saveDailyState(nextGuesses, false, false, null);
+        saveDailyState(nextGuesses, false, false, null, 0);
       }
     } catch (err) {
       console.error('Error submitting skip:', err);
@@ -397,6 +514,7 @@ export default function App() {
     if (!puzzleData || isGameOver || targetIndex <= guesses.length) return;
 
     try {
+      const timeTakenMs = Date.now() - startTime;
       const currentCount = guesses.length;
       const skipCount = targetIndex - currentCount + 1;
 
@@ -408,7 +526,8 @@ export default function App() {
         skipCount,
         mode: gameMode,
         targetSongId: puzzleData.targetSongId,
-        currentGuessesCount: currentCount
+        currentGuessesCount: currentCount,
+        timeTakenMs
       };
 
       const res = await fetch(`${API_BASE_URL}/api/guess`, {
@@ -436,12 +555,13 @@ export default function App() {
         setIsGameOver(true);
         setIsSolved(false);
         setTargetSong(data.targetSong);
+        setGameScore(data.score || 0);
         const updatedStats = saveLocalStats(false);
         setStats(updatedStats);
-        saveDailyState(newGuesses, true, false, data.targetSong);
+        saveDailyState(newGuesses, true, false, data.targetSong, data.score || 0);
         setTimeout(() => setShowResult(true), 600);
       } else {
-        saveDailyState(newGuesses, false, false, null);
+        saveDailyState(newGuesses, false, false, null, 0);
       }
     } catch (err) {
       console.error('Error skipping to target step:', err);
@@ -453,35 +573,6 @@ export default function App() {
     fetchPuzzle(gameMode);
   };
 
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', gap: 16 }}>
-        <div className="wave-bar" style={{ width: 6, height: 40, background: 'var(--accent-primary)', borderRadius: 3, animation: 'wave 1s infinite alternate' }} />
-        <p style={{ color: 'var(--text-muted)', fontWeight: 500 }}>
-          {gameMode === 'spotify' ? 'Loading Spotify Song...' : gameMode === 'unlimited' ? 'Loading Random Song...' : "Loading Today's Puzzle..."}
-        </p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div style={{ padding: 32, textAlign: 'center', color: '#ef4444' }}>
-        <h2>Unable to load game</h2>
-        <p style={{ marginTop: 8, color: 'var(--text-muted)' }}>{error}</p>
-        <button
-          className="btn-submit"
-          style={{ width: 'auto', marginTop: 16, padding: '0 24px' }}
-          onClick={() => window.location.reload()}
-        >
-          Retry Connection
-        </button>
-      </div>
-    );
-  }
-
-  const currentIndex = guesses.length;
-
   return (
     <>
       <Header
@@ -489,58 +580,103 @@ export default function App() {
         onToggleMode={handleToggleMode}
         onOpenHelp={() => setShowHelp(true)}
         onOpenStats={() => setShowStats(true)}
+        onOpenLeaderboard={() => setShowLeaderboardModal(true)}
+        onOpenProfile={() => setShowProfileModal(true)}
+        onOpenPartyModal={() => setShowPartyModal(true)}
         onOpenSpotifyModal={() => setShowSpotifyModal(true)}
         activePlaylistName={spotifyPlaylist?.playlistName}
+        userProfile={userProfile}
       />
 
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <GuessGrid
-          guesses={guesses}
-          maxGuesses={puzzleData?.maxGuesses || 6}
-          currentIndex={currentIndex}
-          onSelectStep={handleSelectStep}
-        />
-
-        <Player
-          previewUrl={puzzleData?.previewUrl}
-          guessDurationsMs={puzzleData?.guessDurationsMs}
-          currentIndex={currentIndex}
-          isGameOver={isGameOver}
-          onSelectStep={handleSelectStep}
-        />
-
-        {!isGameOver ? (
-          <SearchAutocomplete
-            onMakeGuess={handleMakeGuess}
-            onSkip={handleSkip}
-            disabled={isGameOver}
+      {/* RENDER PARTY MODE VIEW */}
+      {gameMode === 'party' ? (
+        partyState?.status === 'playing' ? (
+          <PartyGame
+            partyState={partyState}
+            anonId={anonId}
             apiBaseUrl={API_BASE_URL}
+            onStateUpdate={setPartyState}
+            onLeaveParty={handleLeaveParty}
           />
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
-            {gameMode !== 'daily' && (
+          <PartyLobby
+            partyState={partyState}
+            anonId={anonId}
+            apiBaseUrl={API_BASE_URL}
+            onStartGame={handleStartPartyGame}
+            onLeaveParty={handleLeaveParty}
+            onStateUpdate={setPartyState}
+          />
+        )
+      ) : loading ? (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', gap: 16 }}>
+          <div className="wave-bar" style={{ width: 6, height: 40, background: 'var(--accent-primary)', borderRadius: 3, animation: 'wave 1s infinite alternate' }} />
+          <p style={{ color: 'var(--text-muted)', fontWeight: 500 }}>
+            {gameMode === 'spotify' ? 'Loading Spotify Song...' : gameMode === 'unlimited' ? 'Loading Random Song...' : "Loading Today's Puzzle..."}
+          </p>
+        </div>
+      ) : error ? (
+        <div style={{ padding: 32, textAlign: 'center', color: '#ef4444' }}>
+          <h2>Unable to load game</h2>
+          <p style={{ marginTop: 8, color: 'var(--text-muted)' }}>{error}</p>
+          <button
+            className="btn-submit"
+            style={{ width: 'auto', marginTop: 16, padding: '0 24px' }}
+            onClick={() => window.location.reload()}
+          >
+            Retry Connection
+          </button>
+        </div>
+      ) : (
+        <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <GuessGrid
+            guesses={guesses}
+            maxGuesses={puzzleData?.maxGuesses || 6}
+            currentIndex={guesses.length}
+            onSelectStep={handleSelectStep}
+          />
+
+          <Player
+            previewUrl={puzzleData?.previewUrl}
+            guessDurationsMs={puzzleData?.guessDurationsMs}
+            currentIndex={guesses.length}
+            isGameOver={isGameOver}
+            onSelectStep={handleSelectStep}
+          />
+
+          {!isGameOver ? (
+            <SearchAutocomplete
+              onMakeGuess={handleMakeGuess}
+              onSkip={handleSkip}
+              disabled={isGameOver}
+              apiBaseUrl={API_BASE_URL}
+            />
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
+              {gameMode !== 'daily' && (
+                <button
+                  className="share-btn"
+                  onClick={handlePlayNextRandom}
+                  style={{
+                    background: gameMode === 'spotify' ? 'linear-gradient(135deg, #1db954, #059669)' : 'linear-gradient(135deg, #8b5cf6, #ec4899)',
+                    boxShadow: '0 4px 15px rgba(29, 185, 84, 0.3)'
+                  }}
+                >
+                  <Shuffle size={18} />
+                  Play Next Song 🔀
+                </button>
+              )}
               <button
                 className="share-btn"
-                onClick={handlePlayNextRandom}
-                style={{
-                  background: gameMode === 'spotify' ? 'linear-gradient(135deg, #1db954, #059669)' : 'linear-gradient(135deg, #8b5cf6, #ec4899)',
-                  boxShadow: '0 4px 15px rgba(29, 185, 84, 0.3)'
-                }}
+                onClick={() => setShowResult(true)}
+                style={{ background: gameMode !== 'daily' ? 'rgba(255, 255, 255, 0.08)' : 'linear-gradient(135deg, #10b981, #059669)' }}
               >
-                <Shuffle size={18} />
-                Play Next Song 🔀
+                Show Result & Share
               </button>
-            )}
-            <button
-              className="share-btn"
-              onClick={() => setShowResult(true)}
-              style={{ background: gameMode !== 'daily' ? 'rgba(255, 255, 255, 0.08)' : 'linear-gradient(135deg, #10b981, #059669)' }}
-            >
-              Show Result & Share
-            </button>
-          </div>
-        )}
-      </main>
+            </div>
+          )}
+        </main>
+      )}
 
       {/* NON-INTRUSIVE BACKGROUND IMPORT STATUS BADGE */}
       {bgImportStatus && (
@@ -578,8 +714,30 @@ export default function App() {
         </div>
       )}
 
+      {/* MODALS */}
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
       {showStats && <StatsModal stats={stats} onClose={() => setShowStats(false)} />}
+      {showProfileModal && (
+        <ProfileModal
+          userProfile={userProfile}
+          onSaveProfile={handleSaveProfile}
+          onClose={() => setShowProfileModal(false)}
+        />
+      )}
+      {showLeaderboardModal && (
+        <LeaderboardModal
+          apiBaseUrl={API_BASE_URL}
+          anonId={anonId}
+          onClose={() => setShowLeaderboardModal(false)}
+        />
+      )}
+      {showPartyModal && (
+        <PartyModal
+          onCreateParty={handleCreateParty}
+          onJoinParty={handleJoinParty}
+          onClose={() => setShowPartyModal(false)}
+        />
+      )}
       {showSpotifyModal && (
         <SpotifyModal
           onSelectCached={handleSelectCached}
@@ -594,6 +752,7 @@ export default function App() {
           isSolved={isSolved}
           puzzleDate={puzzleData?.puzzleDate}
           gameMode={gameMode}
+          gameScore={gameScore}
           onPlayNextUnlimited={handlePlayNextRandom}
           onClose={() => setShowResult(false)}
         />

@@ -1,5 +1,6 @@
 import express from 'express';
 import db from '../db/db.js';
+import { calculateScore } from '../services/scoring.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -17,7 +18,17 @@ function getMaxGuesses() {
 
 router.post('/guess', (req, res) => {
   try {
-    const { puzzleId, anonId, songId, isSkip, mode, targetSongId, currentGuessesCount = 0, skipCount = 1 } = req.body;
+    const {
+      puzzleId,
+      anonId,
+      songId,
+      isSkip,
+      mode,
+      targetSongId,
+      currentGuessesCount = 0,
+      skipCount = 1,
+      timeTakenMs = 0
+    } = req.body;
 
     if (!puzzleId || !anonId) {
       return res.status(400).json({ error: 'puzzleId and anonId are required' });
@@ -47,6 +58,18 @@ router.post('/guess', (req, res) => {
         guessedSongInfo = db.prepare('SELECT id, title, artist, artwork_url FROM songs WHERE id = ?').get(songId);
       }
 
+      // Compute score if game over
+      const skipsUsed = isSkip ? increment : 0;
+      const wrongGuesses = (!isSkip && !isCorrect) ? 1 : 0;
+      const score = isGameOver ? calculateScore({
+        isSolved: isCorrect,
+        guessNumber: nextGuessNumber,
+        maxGuesses,
+        timeTakenMs,
+        skipsUsed,
+        wrongGuesses
+      }) : 0;
+
       return res.json({
         guessNumber: nextGuessNumber,
         addedSkips: increment,
@@ -55,6 +78,7 @@ router.post('/guess', (req, res) => {
         isSkip: Boolean(isSkip),
         guessedSong: guessedSongInfo,
         guessesUsed: nextGuessNumber,
+        score,
         targetSong: isGameOver ? targetSong : null
       });
     }
@@ -82,8 +106,8 @@ router.post('/guess', (req, res) => {
     let attempt = db.prepare('SELECT * FROM attempts WHERE puzzle_id = ? AND session_id = ?').get(puzzleId, session.id);
     if (!attempt) {
       db.prepare(`
-        INSERT INTO attempts (puzzle_id, session_id, guesses_used, is_solved)
-        VALUES (?, ?, 0, 0)
+        INSERT INTO attempts (puzzle_id, session_id, guesses_used, is_solved, score, time_taken_ms, skips_used, wrong_guesses)
+        VALUES (?, ?, 0, 0, 0, 0, 0, 0)
       `).run(puzzleId, session.id);
       attempt = db.prepare('SELECT * FROM attempts WHERE puzzle_id = ? AND session_id = ?').get(puzzleId, session.id);
     }
@@ -94,6 +118,7 @@ router.post('/guess', (req, res) => {
         isCorrect: Boolean(attempt.is_solved),
         isGameOver: true,
         guessesUsed: attempt.guesses_used,
+        score: attempt.score || 0,
         targetSong: {
           id: puzzle.song_id,
           title: puzzle.title,
@@ -125,12 +150,25 @@ router.post('/guess', (req, res) => {
     const isGameOver = isSolved === 1 || newGuessesUsed >= maxGuesses;
     const completedAt = isGameOver ? new Date().toISOString() : null;
 
+    const newSkipsUsed = (attempt.skips_used || 0) + (isSkip ? increment : 0);
+    const newWrongGuesses = (attempt.wrong_guesses || 0) + ((!isSkip && !isCorrect) ? 1 : 0);
+    const newTimeTaken = Math.max(attempt.time_taken_ms || 0, Number(timeTakenMs));
+
+    const finalScore = isGameOver ? calculateScore({
+      isSolved: Boolean(isSolved),
+      guessNumber: newGuessesUsed,
+      maxGuesses,
+      timeTakenMs: newTimeTaken,
+      skipsUsed: newSkipsUsed,
+      wrongGuesses: newWrongGuesses
+    }) : 0;
+
     // Update attempt
     db.prepare(`
       UPDATE attempts
-      SET guesses_used = ?, is_solved = ?, completed_at = COALESCE(?, completed_at)
+      SET guesses_used = ?, is_solved = ?, score = ?, time_taken_ms = ?, skips_used = ?, wrong_guesses = ?, completed_at = COALESCE(?, completed_at)
       WHERE id = ?
-    `).run(newGuessesUsed, isSolved, completedAt, attempt.id);
+    `).run(newGuessesUsed, isSolved, finalScore, newTimeTaken, newSkipsUsed, newWrongGuesses, completedAt, attempt.id);
 
     // Get guessed song details if provided
     let guessedSongInfo = null;
@@ -146,6 +184,7 @@ router.post('/guess', (req, res) => {
       isSkip: Boolean(isSkip),
       guessedSong: guessedSongInfo,
       guessesUsed: newGuessesUsed,
+      score: finalScore,
       targetSong: isGameOver ? {
         id: puzzle.song_id,
         title: puzzle.title,

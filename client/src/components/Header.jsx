@@ -1,7 +1,18 @@
 import React from 'react';
-import { Music2, HelpCircle, BarChart2, Calendar, Infinity as InfinityIcon, Disc, PlusCircle } from 'lucide-react';
+import { Music2, HelpCircle, BarChart2, Calendar, Infinity as InfinityIcon, Disc, PlusCircle, Trophy, Users, User } from 'lucide-react';
 
-export default function Header({ gameMode, onToggleMode, onOpenHelp, onOpenStats, onOpenSpotifyModal, activePlaylistName }) {
+export default function Header({
+  gameMode,
+  onToggleMode,
+  onOpenHelp,
+  onOpenStats,
+  onOpenLeaderboard,
+  onOpenProfile,
+  onOpenPartyModal,
+  onOpenSpotifyModal,
+  activePlaylistName,
+  userProfile
+}) {
   return (
     <header className="app-header">
       <div className="logo-group">
@@ -108,14 +119,63 @@ export default function Header({ gameMode, onToggleMode, onOpenHelp, onOpenStats
           <span>Spotify</span>
           {gameMode === 'spotify' && <PlusCircle size={12} style={{ marginLeft: 2 }} />}
         </button>
+
+        <button
+          onClick={() => onToggleMode('party')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '5px 10px',
+            borderRadius: 16,
+            border: 'none',
+            fontSize: '0.78rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            background: gameMode === 'party' ? 'linear-gradient(135deg, #ec4899, #8b5cf6)' : 'transparent',
+            color: gameMode === 'party' ? '#fff' : 'var(--text-muted)',
+            transition: 'all 0.2s ease'
+          }}
+          title="Party Versus Mode (Play together)"
+        >
+          <Users size={13} />
+          <span>Party 🎉</span>
+        </button>
       </div>
 
       <div className="nav-actions">
+        <button className="icon-btn" onClick={onOpenLeaderboard} title="Leaderboard" aria-label="Leaderboard">
+          <Trophy size={20} color="#f59e0b" />
+        </button>
         <button className="icon-btn" onClick={onOpenHelp} title="How to Play" aria-label="Help">
           <HelpCircle size={20} />
         </button>
         <button className="icon-btn" onClick={onOpenStats} title="Statistics" aria-label="Stats">
           <BarChart2 size={20} />
+        </button>
+
+        {/* User Profile Avatar Circle */}
+        <button
+          className="icon-btn"
+          onClick={onOpenProfile}
+          title={userProfile?.displayName ? `Profile: ${userProfile.displayName}` : 'Set Profile Name'}
+          style={{ padding: 0, border: 'none', background: 'transparent' }}
+        >
+          <div style={{
+            width: 32,
+            height: 32,
+            borderRadius: '50%',
+            background: userProfile?.avatarColor || '#3b82f6',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontWeight: 800,
+            color: '#fff',
+            fontSize: '0.85rem',
+            boxShadow: `0 2px 8px ${userProfile?.avatarColor || '#3b82f6'}66`
+          }}>
+            {(userProfile?.displayName ? userProfile.displayName[0] : '?').toUpperCase()}
+          </div>
         </button>
       </div>
     </header>

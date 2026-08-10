@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Share2, ExternalLink, Trophy, Music, Shuffle, Play, Pause, Volume2, Volume1, VolumeX } from 'lucide-react';
 
-export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate, gameMode, onPlayNextUnlimited, onClose }) {
+export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate, gameMode, gameScore = 0, onPlayNextUnlimited, onClose }) {
   const [copied, setCopied] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef(null);
@@ -90,9 +90,10 @@ export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate,
 
     const gridString = emojis.join('');
     const scoreStr = isSolved ? `${guesses.length}/6` : 'X/6';
+    const scoreBadge = gameScore > 0 ? ` ⭐ ${gameScore.toLocaleString()} pts` : '';
     const modeLabel = gameMode === 'spotify' ? 'Spotify Playlist 🎧' : gameMode === 'unlimited' ? 'Unlimited ♾️' : (puzzleDate || '');
 
-    return `Song Guesser ${modeLabel}\n🔊 ${scoreStr}\n\n${gridString}\n\nPlay at: ${window.location.origin}`;
+    return `Song Guesser ${modeLabel}\n🔊 ${scoreStr}${scoreBadge}\n\n${gridString}\n\nPlay at: ${window.location.origin}`;
   };
 
   const handleCopyShare = () => {
