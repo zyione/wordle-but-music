@@ -6,8 +6,8 @@ import SearchAutocomplete from './components/SearchAutocomplete.jsx';
 import ResultModal from './components/ResultModal.jsx';
 import HelpModal from './components/HelpModal.jsx';
 import StatsModal from './components/StatsModal.jsx';
-import SpotifyModal from './components/SpotifyModal.jsx';
-import { Shuffle } from 'lucide-react';
+import SpotifyModal, { saveCachedPlaylist } from './components/SpotifyModal.jsx';
+import { Shuffle, Loader2, CheckCircle2 } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 
@@ -46,6 +46,7 @@ export default function App() {
   const [spotifyPlaylist, setSpotifyPlaylist] = useState(null); // { playlistName, songIds: [...] }
   const [showSpotifyModal, setShowSpotifyModal] = useState(false);
   const [playedSongIds, setPlayedSongIds] = useState([]); // Track played songs in session to prevent repeats
+  const [bgImportStatus, setBgImportStatus] = useState(null); // { isImporting, playlistName, current, total, readyCount, isComplete }
 
   const [puzzleData, setPuzzleData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -155,6 +156,52 @@ export default function App() {
     setGameMode('spotify');
     setPlayedSongIds([]);
     fetchPuzzle('spotify', importedData.songIds, []);
+  };
+
+  const handleBackgroundProgress = (msg) => {
+    if (msg.type === 'progress') {
+      setBgImportStatus({
+        isImporting: true,
+        playlistName: msg.playlistName,
+        current: msg.current,
+        total: msg.total,
+        readyCount: msg.importedTracksCount,
+        isComplete: false
+      });
+
+      // Update active playlist song IDs live in background
+      if (msg.songIds && msg.songIds.length > 0) {
+        setSpotifyPlaylist((prev) => ({
+          playlistId: msg.playlistId,
+          playlistName: msg.playlistName,
+          importedTracksCount: msg.importedTracksCount,
+          songIds: msg.songIds
+        }));
+      }
+    } else if (msg.type === 'complete') {
+      setBgImportStatus({
+        isImporting: false,
+        playlistName: msg.playlistName,
+        current: msg.totalPlaylistTracks,
+        total: msg.totalPlaylistTracks,
+        readyCount: msg.importedTracksCount,
+        isComplete: true
+      });
+
+      setSpotifyPlaylist({
+        playlistId: msg.playlistId,
+        playlistName: msg.playlistName,
+        importedTracksCount: msg.importedTracksCount,
+        songIds: msg.songIds
+      });
+
+      saveCachedPlaylist(msg);
+
+      // Hide status badge after 3.5 seconds
+      setTimeout(() => {
+        setBgImportStatus(null);
+      }, 3500);
+    }
   };
 
   // Save game state for daily mode
@@ -359,11 +406,48 @@ export default function App() {
         )}
       </main>
 
+      {/* NON-INTRUSIVE BACKGROUND IMPORT STATUS BADGE */}
+      {bgImportStatus && (
+        <div style={{
+          position: 'fixed',
+          bottom: 20,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: bgImportStatus.isComplete ? 'rgba(16, 185, 129, 0.95)' : 'rgba(18, 24, 38, 0.92)',
+          border: '1px solid rgba(29, 185, 84, 0.4)',
+          color: '#fff',
+          padding: '8px 18px',
+          borderRadius: 30,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          fontSize: '0.82rem',
+          fontWeight: 600,
+          boxShadow: '0 8px 30px rgba(0,0,0,0.6)',
+          backdropFilter: 'blur(10px)',
+          zIndex: 1500,
+          animation: 'toastFade 0.25s ease-out'
+        }}>
+          {bgImportStatus.isComplete ? (
+            <>
+              <CheckCircle2 size={16} color="#fff" />
+              <span>Playlist Ready ({bgImportStatus.readyCount} songs available)</span>
+            </>
+          ) : (
+            <>
+              <Loader2 size={15} color="#1db954" style={{ animation: 'spin 1.2s linear infinite' }} />
+              <span>Importing Spotify Playlist ({bgImportStatus.readyCount} / {bgImportStatus.total} ready...)</span>
+            </>
+          )}
+        </div>
+      )}
+
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
       {showStats && <StatsModal stats={stats} onClose={() => setShowStats(false)} />}
       {showSpotifyModal && (
         <SpotifyModal
           onImportSuccess={handleSpotifyImportSuccess}
+          onBackgroundProgress={handleBackgroundProgress}
           onClose={() => setShowSpotifyModal(false)}
           apiBaseUrl={API_BASE_URL}
         />

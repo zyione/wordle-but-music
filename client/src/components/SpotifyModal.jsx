@@ -12,7 +12,7 @@ function getCachedPlaylists() {
   }
 }
 
-function saveCachedPlaylist(playlistData) {
+export function saveCachedPlaylist(playlistData) {
   const current = getCachedPlaylists();
   const updated = [
     {
@@ -32,12 +32,11 @@ function deleteCachedPlaylist(playlistId) {
   return updated;
 }
 
-export default function SpotifyModal({ onImportSuccess, onClose, apiBaseUrl = 'http://localhost:4000' }) {
+export default function SpotifyModal({ onImportSuccess, onBackgroundProgress, onClose, apiBaseUrl = 'http://localhost:4000' }) {
   const [playlistUrl, setPlaylistUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0, percent: 0, status: 'Parsing Spotify playlist...', trackInfo: '' });
   const [error, setError] = useState(null);
-  const [importResult, setImportResult] = useState(null);
   const [cachedPlaylists, setCachedPlaylists] = useState(getCachedPlaylists());
 
   const handleImport = async (e) => {
@@ -47,7 +46,6 @@ export default function SpotifyModal({ onImportSuccess, onClose, apiBaseUrl = 'h
     try {
       setLoading(true);
       setError(null);
-      setImportResult(null);
       setProgress({ current: 0, total: 0, percent: 0, status: 'Connecting to Spotify...', trackInfo: '' });
 
       const response = await fetch(`${apiBaseUrl}/api/spotify/import`, {
@@ -64,7 +62,7 @@ export default function SpotifyModal({ onImportSuccess, onClose, apiBaseUrl = 'h
       const reader = response.body.getReader();
       const decoder = new TextDecoder('utf-8');
       let buffer = '';
-      let completedData = null;
+      let hasLaunchedInstant = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -78,6 +76,7 @@ export default function SpotifyModal({ onImportSuccess, onClose, apiBaseUrl = 'h
           if (!line.trim()) continue;
           try {
             const msg = JSON.parse(line);
+
             if (msg.type === 'init') {
               setProgress({
                 current: 0,
@@ -95,25 +94,31 @@ export default function SpotifyModal({ onImportSuccess, onClose, apiBaseUrl = 'h
                 status: `Track ${msg.current} of ${msg.total}`,
                 trackInfo: `Matching "${msg.title}" by ${msg.artist}`
               });
+
+              if (onBackgroundProgress) {
+                onBackgroundProgress(msg);
+              }
+            } else if (msg.type === 'first_match' || (msg.songIds && msg.songIds.length > 0 && !hasLaunchedInstant)) {
+              if (!hasLaunchedInstant) {
+                hasLaunchedInstant = true;
+                // Instant zero-downtime start as soon as 1st song is ready!
+                onImportSuccess(msg);
+                onClose();
+              }
             } else if (msg.type === 'error') {
               throw new Error(msg.error || 'Import error');
             } else if (msg.type === 'complete') {
-              completedData = msg;
-              setImportResult(msg);
-              const updatedCache = saveCachedPlaylist(msg);
-              setCachedPlaylists(updatedCache);
+              saveCachedPlaylist(msg);
+              setCachedPlaylists(getCachedPlaylists());
+              if (!hasLaunchedInstant) {
+                onImportSuccess(msg);
+                onClose();
+              }
             }
           } catch (lineErr) {
             console.warn('Error parsing stream line:', lineErr);
           }
         }
-      }
-
-      if (completedData) {
-        setTimeout(() => {
-          onImportSuccess(completedData);
-          onClose();
-        }, 500);
       }
     } catch (err) {
       console.error('Spotify import error:', err);
@@ -132,13 +137,6 @@ export default function SpotifyModal({ onImportSuccess, onClose, apiBaseUrl = 'h
     e.stopPropagation();
     const updated = deleteCachedPlaylist(playlistId);
     setCachedPlaylists(updated);
-  };
-
-  const handleStartPlaying = () => {
-    if (importResult) {
-      onImportSuccess(importResult);
-      onClose();
-    }
   };
 
   return (
@@ -212,7 +210,7 @@ export default function SpotifyModal({ onImportSuccess, onClose, apiBaseUrl = 'h
             </div>
 
             <p style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>
-              Fetching 30s audio previews and artwork via Deezer CDN...
+              Launching game as soon as 1st song matches...
             </p>
           </div>
         ) : (
@@ -252,28 +250,6 @@ export default function SpotifyModal({ onImportSuccess, onClose, apiBaseUrl = 'h
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#ef4444', fontSize: '0.85rem', background: 'rgba(239,68,68,0.1)', padding: 12, borderRadius: 8 }}>
                 <AlertCircle size={16} style={{ flexShrink: 0 }} />
                 <span>{error}</span>
-              </div>
-            )}
-
-            {importResult && (
-              <div style={{ background: 'rgba(29, 185, 84, 0.12)', border: '1px solid rgba(29, 185, 84, 0.3)', padding: 16, borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <CheckCircle2 size={22} color="#1db954" />
-                  <div>
-                    <strong style={{ fontSize: '1rem', color: '#fff' }}>{importResult.playlistName}</strong>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                      Successfully imported {importResult.importedTracksCount} playable songs!
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  className="btn-submit"
-                  onClick={handleStartPlaying}
-                  style={{ background: 'linear-gradient(135deg, #1db954, #059669)', color: '#ffffff', fontWeight: 800, width: '100%' }}
-                >
-                  Start Playing This Playlist 🎧
-                </button>
               </div>
             )}
 
