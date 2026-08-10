@@ -121,7 +121,21 @@ Send a `POST` request to `http://localhost:4000/admin/puzzle`:
 ## 🎮 Game Modes
 
 - **📅 Daily Mode**: 1 mystery song per calendar date. Progress is tracked and saved for today.
-- **♾️ Unlimited Mode**: Play non-stop with endless random songs! On win or loss, click **"Play Next Song 🔀"** to immediately start a new mystery track.
+- **♾️ Unlimited Mode**: Play non-stop with endless random songs from your database!
+- **🎧 Spotify Playlist Mode**: Paste **any public Spotify Playlist link**! The app extracts the playlist tracks, finds the audio previews via Deezer, and lets you play songs exclusively from that Spotify playlist!
+
+---
+
+## 🎧 How to Use Spotify Playlist Mode
+
+1. In the header, click the **Spotify 🎧** mode button.
+2. A pop-up dialog will ask for your Spotify playlist link:
+   ```
+   https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M
+   ```
+3. Click **Import Spotify Playlist**. The app will extract the tracklist, match the audio previews, and load the custom playlist.
+4. Click **Start Playing This Playlist 🎧** to start guessing!
+5. After finishing each song, click **Play Next Song 🔀** to pick another random track from your imported Spotify playlist!
 
 ---
 
@@ -132,6 +146,8 @@ Send a `POST` request to `http://localhost:4000/admin/puzzle`:
 | `GET` | `/api/config` | Returns audio snippet duration thresholds and max guesses |
 | `GET` | `/api/puzzle/today` | Returns today's daily puzzle ID & preview audio stream URL |
 | `GET` | `/api/puzzle/random` | Returns a random song puzzle for Unlimited Mode |
+| `POST` | `/api/spotify/import` | Body: `{ playlistUrl }` → parses Spotify playlist & fetches Deezer previews |
+| `GET` | `/api/puzzle/spotify` | Query: `?songIds=1,2,3...` → returns a random song puzzle from Spotify playlist |
 | `GET` | `/api/search?q=` | Live autocomplete search against local song database |
 | `POST` | `/api/guess` | Body: `{ puzzleId, anonId, songId, isSkip, mode }` → validates guess |
 | `POST` | `/admin/songs` | Body: `{ title, artist }` → fetches Deezer preview & artwork, adds to DB |
