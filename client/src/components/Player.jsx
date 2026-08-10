@@ -205,12 +205,12 @@ export default function Player({
         <span className="time-display">{formatTime(currentTime)}</span>
 
         <button
-          className="play-btn"
+          className="play-btn-large"
           onClick={togglePlay}
           disabled={!previewUrl}
           aria-label={isPlaying ? 'Pause snippet' : 'Play snippet'}
         >
-          {isPlaying ? <Pause size={28} /> : <Play size={28} style={{ marginLeft: 4 }} />}
+          {isPlaying ? <Pause size={26} /> : <Play size={26} style={{ marginLeft: 3 }} />}
         </button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
