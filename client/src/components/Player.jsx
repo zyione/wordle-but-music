@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, Volume2, Volume1, VolumeX, AlertCircle } from 'lucide-react';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+
 export default function Player({
   previewUrl,
   guessDurationsMs = [1000, 2000, 4000, 7000, 11000, 16000],
@@ -13,6 +15,7 @@ export default function Player({
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [audioError, setAudioError] = useState(false);
+  const [useProxy, setUseProxy] = useState(false);
 
   // Volume & Mute State (persisted in LocalStorage)
   const [volume, setVolume] = useState(() => {
@@ -29,6 +32,10 @@ export default function Player({
     ? maxTotalMs
     : (guessDurationsMs[Math.min(currentIndex, guessDurationsMs.length - 1)] || 16000);
 
+  const activeAudioSrc = previewUrl
+    ? (useProxy ? `${API_BASE_URL}/api/audio/proxy?url=${encodeURIComponent(previewUrl)}` : previewUrl)
+    : '';
+
   // Update audio element volume whenever state changes
   useEffect(() => {
     if (audioRef.current) {
@@ -41,12 +48,10 @@ export default function Player({
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
-      if (previewUrl) {
-        audioRef.current.load();
-      }
       setIsPlaying(false);
       setCurrentTime(0);
       setAudioError(false);
+      setUseProxy(false);
     }
   }, [currentIndex, isGameOver, previewUrl]);
 
@@ -69,24 +74,28 @@ export default function Player({
       setCurrentTime(0);
     };
 
-    const handleError = () => {
-      // Only flag error if previewUrl exists and is active
-      if (previewUrl) {
-        console.warn('Audio stream error');
-      }
-      setIsPlaying(false);
-    };
-
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('ended', handleEnded);
-    audio.addEventListener('error', handleError);
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('ended', handleEnded);
-      audio.removeEventListener('error', handleError);
     };
-  }, [activeMaxMs, previewUrl]);
+  }, [activeMaxMs]);
+
+  const attemptPlay = (audio, durationMs) => {
+    return audio.play().then(() => {
+      setIsPlaying(true);
+      setAudioError(false);
+      const remainingMs = durationMs - (audio.currentTime * 1000);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        audio.pause();
+        audio.currentTime = 0;
+        setIsPlaying(false);
+      }, Math.max(0, remainingMs));
+    });
+  };
 
   const togglePlay = () => {
     const audio = audioRef.current;
@@ -104,19 +113,26 @@ export default function Player({
         audio.currentTime = 0;
       }
 
-      audio.play().then(() => {
-        setIsPlaying(true);
-        const remainingMs = activeMaxMs - (audio.currentTime * 1000);
-        if (timerRef.current) clearTimeout(timerRef.current);
-        timerRef.current = setTimeout(() => {
-          audio.pause();
-          audio.currentTime = 0;
+      attemptPlay(audio, activeMaxMs).catch((err) => {
+        console.warn('Direct play failed or blocked, attempting audio proxy fallback:', err);
+        // Switch to proxy endpoint for 100% cross-browser compatibility
+        if (!useProxy) {
+          setUseProxy(true);
+          setTimeout(() => {
+            if (audioRef.current) {
+              audioRef.current.volume = isMuted ? 0 : volume;
+              audioRef.current.currentTime = 0;
+              attemptPlay(audioRef.current, activeMaxMs).catch((proxyErr) => {
+                console.error('Audio proxy fallback also failed:', proxyErr);
+                setAudioError(true);
+                setIsPlaying(false);
+              });
+            }
+          }, 150);
+        } else {
+          setAudioError(true);
           setIsPlaying(false);
-        }, Math.max(0, remainingMs));
-      }).catch((err) => {
-        console.error('Audio play blocked or failed:', err);
-        setAudioError(true);
-        setIsPlaying(false);
+        }
       });
     }
   };
@@ -158,7 +174,7 @@ export default function Player({
 
   return (
     <div className="player-container">
-      <audio ref={audioRef} src={previewUrl} preload="auto" />
+      <audio ref={audioRef} src={activeAudioSrc} preload="auto" />
 
       {/* Progress Timeline with interactive threshold ticks */}
       <div className="timeline-bar-wrapper">

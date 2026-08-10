@@ -18,6 +18,26 @@ function getSnippetConfig() {
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+async function ensureFreshPreviewUrl(songId, title, artist, currentUrl) {
+  try {
+    if (currentUrl) {
+      const testRes = await fetch(currentUrl, { method: 'HEAD' }).catch(() => null);
+      if (testRes && testRes.ok) {
+        return currentUrl;
+      }
+    }
+
+    const fresh = await fetchTrackMetadata(title, artist);
+    if (fresh && fresh.preview_url) {
+      db.prepare('UPDATE songs SET preview_url = ? WHERE id = ?').run(fresh.preview_url, songId);
+      return fresh.preview_url;
+    }
+  } catch (err) {
+    console.warn('Error refreshing preview URL:', err.message);
+  }
+  return currentUrl;
+}
+
 // Import tracks from a Spotify playlist URL with streaming NDJSON progress & instant first match
 router.post('/spotify/import', async (req, res) => {
   try {
@@ -142,7 +162,7 @@ router.post('/spotify/import', async (req, res) => {
 });
 
 // GET puzzle from imported Spotify playlist song IDs (excluding previously played song IDs in session)
-router.get('/puzzle/spotify', (req, res) => {
+router.get('/puzzle/spotify', async (req, res) => {
   try {
     const rawIds = (req.query.songIds || '').toString();
     const rawExclude = (req.query.excludeIds || '').toString();
@@ -169,18 +189,20 @@ router.get('/puzzle/spotify', (req, res) => {
     }
 
     const randomId = candidateIds[Math.floor(Math.random() * candidateIds.length)];
-    const song = db.prepare('SELECT id, preview_url FROM songs WHERE id = ?').get(randomId);
+    const song = db.prepare('SELECT id, title, artist, preview_url FROM songs WHERE id = ?').get(randomId);
 
     if (!song) {
       return res.status(404).json({ error: 'Selected song not found in database' });
     }
+
+    const freshUrl = await ensureFreshPreviewUrl(song.id, song.title, song.artist, song.preview_url);
 
     const config = getSnippetConfig();
 
     res.json({
       puzzleId: `spotify_${song.id}_${Date.now()}`,
       targetSongId: song.id,
-      previewUrl: song.preview_url,
+      previewUrl: freshUrl,
       maxGuesses: config.maxGuesses,
       guessDurationsMs: config.guessDurationsMs,
       mode: 'spotify',

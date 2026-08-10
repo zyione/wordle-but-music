@@ -13,6 +13,7 @@ import { migrate } from './db/migrate.js';
 import { scheduleToday } from './db/scheduleToday.js';
 
 import spotifyRoutes from './routes/spotify.js';
+import audioProxyRoutes from './routes/audioProxy.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -40,6 +41,7 @@ app.use('/api', puzzleRoutes);
 app.use('/api', searchRoutes);
 app.use('/api', guessRoutes);
 app.use('/api', spotifyRoutes);
+app.use('/api', audioProxyRoutes);
 app.use('/', adminRoutes);
 
 // Healthcheck
