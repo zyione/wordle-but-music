@@ -1,5 +1,6 @@
 import express from 'express';
 import db from '../db/db.js';
+import { calculateScore } from '../services/scoring.js';
 
 const router = express.Router();
 
@@ -23,22 +24,33 @@ router.get('/leaderboard/daily', (req, res) => {
       JOIN puzzles p ON a.puzzle_id = p.id
       JOIN sessions s ON a.session_id = s.id
       LEFT JOIN users u ON s.anon_id = u.anon_id
-      WHERE p.puzzle_date = ? AND a.score > 0
-      ORDER BY a.score DESC, a.time_taken_ms ASC
+      WHERE p.puzzle_date = ? AND (a.score > 0 OR a.is_solved = 1)
+      ORDER BY a.score DESC, a.guesses_used ASC, a.time_taken_ms ASC
       LIMIT 50
     `).all(date);
 
-    const leaderboard = rows.map((r, idx) => ({
-      rank: idx + 1,
-      displayName: r.displayName || 'Anonymous Guesser',
-      avatarColor: r.avatarColor || '#3b82f6',
-      anonId: r.anonId,
-      score: r.score,
-      guessesUsed: r.guessesUsed,
-      timeTakenMs: r.timeTakenMs,
-      isSolved: Boolean(r.isSolved),
-      completedAt: r.completedAt
-    }));
+    const leaderboard = rows.map((r, idx) => {
+      const computedScore = r.score > 0 ? r.score : calculateScore({
+        isSolved: Boolean(r.isSolved),
+        guessNumber: r.guessesUsed || 1,
+        maxGuesses: 6,
+        timeTakenMs: r.timeTakenMs || 10000
+      });
+
+      return {
+        rank: idx + 1,
+        displayName: r.displayName || 'Anonymous Guesser',
+        avatarColor: r.avatarColor || '#3b82f6',
+        anonId: r.anonId,
+        score: computedScore,
+        guessesUsed: r.guessesUsed,
+        timeTakenMs: r.timeTakenMs,
+        isSolved: Boolean(r.isSolved),
+        completedAt: r.completedAt
+      };
+    }).sort((a, b) => b.score - a.score);
+
+    leaderboard.forEach((item, index) => { item.rank = index + 1; });
 
     res.json({ date, leaderboard });
   } catch (error) {
@@ -65,22 +77,33 @@ router.get('/leaderboard/alltime', (req, res) => {
       JOIN puzzles p ON a.puzzle_id = p.id
       JOIN sessions s ON a.session_id = s.id
       LEFT JOIN users u ON s.anon_id = u.anon_id
-      WHERE a.score > 0
-      ORDER BY a.score DESC, a.time_taken_ms ASC
+      WHERE (a.score > 0 OR a.is_solved = 1)
+      ORDER BY a.score DESC, a.guesses_used ASC, a.time_taken_ms ASC
       LIMIT 50
     `).all();
 
-    const leaderboard = rows.map((r, idx) => ({
-      rank: idx + 1,
-      displayName: r.displayName || 'Anonymous Guesser',
-      avatarColor: r.avatarColor || '#3b82f6',
-      anonId: r.anonId,
-      score: r.score,
-      guessesUsed: r.guessesUsed,
-      timeTakenMs: r.timeTakenMs,
-      puzzleDate: r.puzzleDate,
-      isSolved: Boolean(r.isSolved)
-    }));
+    const leaderboard = rows.map((r, idx) => {
+      const computedScore = r.score > 0 ? r.score : calculateScore({
+        isSolved: Boolean(r.isSolved),
+        guessNumber: r.guessesUsed || 1,
+        maxGuesses: 6,
+        timeTakenMs: r.timeTakenMs || 10000
+      });
+
+      return {
+        rank: idx + 1,
+        displayName: r.displayName || 'Anonymous Guesser',
+        avatarColor: r.avatarColor || '#3b82f6',
+        anonId: r.anonId,
+        score: computedScore,
+        guessesUsed: r.guessesUsed,
+        timeTakenMs: r.timeTakenMs,
+        puzzleDate: r.puzzleDate,
+        isSolved: Boolean(r.isSolved)
+      };
+    }).sort((a, b) => b.score - a.score);
+
+    leaderboard.forEach((item, index) => { item.rank = index + 1; });
 
     res.json({ leaderboard });
   } catch (error) {
