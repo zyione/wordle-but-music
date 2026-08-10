@@ -129,13 +129,13 @@ Send a `POST` request to `http://localhost:4000/admin/puzzle`:
 ## 🎧 How to Use Spotify Playlist Mode
 
 1. In the header, click the **Spotify 🎧** mode button.
-2. A pop-up dialog will ask for your Spotify playlist link:
+2. A pop-up dialog will open where you can paste any public Spotify playlist link:
    ```
    https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M
    ```
-3. Click **Import Spotify Playlist**. The app will extract the tracklist, match the audio previews, and load the custom playlist.
-4. Click **Start Playing This Playlist 🎧** to start guessing!
-5. After finishing each song, click **Play Next Song 🔀** to pick another random track from your imported Spotify playlist!
+3. Click **Import & Start Playlist**. An **animated loading screen** will display live status while tracklists and 30s audio previews are fetched via Deezer.
+4. **Instant Playlist Caching**: All imported Spotify playlists are automatically cached in your browser (`PREVIOUSLY IMPORTED PLAYLISTS`) so you can load them instantly in one click anytime without re-importing!
+5. After finishing each song, click **Play Next Song 🔀** to pick another random track from your active Spotify playlist.
 
 ---
 
