@@ -1,5 +1,5 @@
 import React from 'react';
-import { Music2, HelpCircle, BarChart2, Calendar, Infinity as InfinityIcon, Disc, PlusCircle, Trophy, Users } from 'lucide-react';
+import { Music2, HelpCircle, BarChart2, Calendar, Infinity as InfinityIcon, Disc, PlusCircle, Trophy, Users, User } from 'lucide-react';
 
 export default function Header({
   gameMode,
@@ -28,7 +28,7 @@ export default function Header({
                 background: 'transparent',
                 border: 'none',
                 fontSize: '0.72rem',
-                color: '#3b82f6',
+                color: '#1db954',
                 fontWeight: 600,
                 display: 'flex',
                 alignItems: 'center',
@@ -46,11 +46,35 @@ export default function Header({
         </div>
       </div>
 
-      {/* Mode Switcher Pill Segmented Control (Gamee Style) */}
-      <div className="mode-switcher-container">
+      {/* Mode Switcher Segmented Control */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        background: 'rgba(255, 255, 255, 0.06)',
+        padding: 3,
+        borderRadius: 20,
+        border: '1px solid var(--bg-card-border)',
+        gap: 2,
+        whiteSpace: 'nowrap'
+      }}>
         <button
           onClick={() => gameMode !== 'daily' && onToggleMode('daily')}
-          className={`mode-btn ${gameMode === 'daily' ? 'active' : ''}`}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '5px 10px',
+            borderRadius: 16,
+            border: 'none',
+            fontSize: '0.78rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
+            background: gameMode === 'daily' ? 'var(--accent-primary)' : 'transparent',
+            color: gameMode === 'daily' ? '#fff' : 'var(--text-muted)',
+            transition: 'all 0.2s ease'
+          }}
         >
           <Calendar size={13} style={{ flexShrink: 0 }} />
           <span>Daily</span>
@@ -58,7 +82,22 @@ export default function Header({
 
         <button
           onClick={() => gameMode !== 'unlimited' && onToggleMode('unlimited')}
-          className={`mode-btn ${gameMode === 'unlimited' ? 'active-blue' : ''}`}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '5px 10px',
+            borderRadius: 16,
+            border: 'none',
+            fontSize: '0.78rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
+            background: gameMode === 'unlimited' ? 'linear-gradient(135deg, #8b5cf6, #ec4899)' : 'transparent',
+            color: gameMode === 'unlimited' ? '#fff' : 'var(--text-muted)',
+            transition: 'all 0.2s ease'
+          }}
         >
           <InfinityIcon size={13} style={{ flexShrink: 0 }} />
           <span>Unlimited</span>
@@ -66,7 +105,22 @@ export default function Header({
 
         <button
           onClick={() => onToggleMode('spotify')}
-          className={`mode-btn ${gameMode === 'spotify' ? 'active-green' : ''}`}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '5px 10px',
+            borderRadius: 16,
+            border: 'none',
+            fontSize: '0.78rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
+            background: gameMode === 'spotify' ? '#1db954' : 'transparent',
+            color: gameMode === 'spotify' ? '#fff' : 'var(--text-muted)',
+            transition: 'all 0.2s ease'
+          }}
           title={gameMode === 'spotify' ? 'Click to import or choose another Spotify playlist' : 'Spotify Playlist Mode'}
         >
           <Disc size={13} style={{ flexShrink: 0 }} />
@@ -76,7 +130,22 @@ export default function Header({
 
         <button
           onClick={() => onToggleMode('party')}
-          className={`mode-btn ${gameMode === 'party' ? 'active-pink' : ''}`}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '5px 10px',
+            borderRadius: 16,
+            border: 'none',
+            fontSize: '0.78rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
+            background: gameMode === 'party' ? 'linear-gradient(135deg, #ec4899, #8b5cf6)' : 'transparent',
+            color: gameMode === 'party' ? '#fff' : 'var(--text-muted)',
+            transition: 'all 0.2s ease'
+          }}
           title="Party Versus Mode (Play together)"
         >
           <Users size={13} style={{ flexShrink: 0 }} />
@@ -103,8 +172,8 @@ export default function Header({
           style={{ padding: 0, border: 'none', background: 'transparent' }}
         >
           <div style={{
-            width: 34,
-            height: 34,
+            width: 32,
+            height: 32,
             borderRadius: '50%',
             background: userProfile?.avatarColor || '#3b82f6',
             display: 'flex',
@@ -112,9 +181,8 @@ export default function Header({
             justifyContent: 'center',
             fontWeight: 800,
             color: '#fff',
-            fontSize: '0.88rem',
-            boxShadow: `0 4px 12px ${userProfile?.avatarColor || '#3b82f6'}66`,
-            border: '2px solid rgba(255, 255, 255, 0.2)'
+            fontSize: '0.85rem',
+            boxShadow: `0 2px 8px ${userProfile?.avatarColor || '#3b82f6'}66`
           }}>
             {(userProfile?.displayName ? userProfile.displayName[0] : '?').toUpperCase()}
           </div>
