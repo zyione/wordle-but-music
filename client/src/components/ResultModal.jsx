@@ -207,18 +207,16 @@ export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate,
 
               <input
                 type="range"
+                className="volume-slider"
                 min="0"
                 max="1"
                 step="0.01"
                 value={isMuted ? 0 : volume}
                 onChange={handleVolumeChange}
                 style={{
-                  width: 60,
+                  width: 54,
                   height: 4,
-                  borderRadius: 2,
-                  accentColor: '#10b981',
-                  cursor: 'pointer',
-                  outline: 'none'
+                  cursor: 'pointer'
                 }}
                 title={`Volume: ${Math.round((isMuted ? 0 : volume) * 100)}%`}
               />

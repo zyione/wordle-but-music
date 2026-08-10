@@ -216,6 +216,7 @@ export default function Player({ previewUrl, guessDurationsMs = [1000, 2000, 400
 
             <input
               type="range"
+              className="volume-slider"
               min="0"
               max="1"
               step="0.01"
@@ -224,10 +225,7 @@ export default function Player({ previewUrl, guessDurationsMs = [1000, 2000, 400
               style={{
                 width: 48,
                 height: 4,
-                borderRadius: 2,
-                accentColor: '#10b981',
-                cursor: 'pointer',
-                outline: 'none'
+                cursor: 'pointer'
               }}
               title={`Volume: ${Math.round((isMuted ? 0 : volume) * 100)}%`}
             />

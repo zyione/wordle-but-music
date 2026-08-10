@@ -58,6 +58,49 @@ body {
   padding: 0 16px 32px 16px;
 }
 
+/* Custom Sleek Range Input Slider */
+input[type="range"].volume-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.15);
+  height: 4px;
+  border-radius: 4px;
+  outline: none;
+}
+
+input[type="range"].volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #10b981;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+input[type="range"].volume-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.3);
+  background: #34d399;
+}
+
+input[type="range"].volume-slider::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border: none;
+  border-radius: 50%;
+  background: #10b981;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+input[type="range"].volume-slider::-moz-range-thumb:hover {
+  transform: scale(1.3);
+  background: #34d399;
+}
+
 /* Typography */
 h1, h2, h3, h4 {
   font-family: 'Outfit', sans-serif;
