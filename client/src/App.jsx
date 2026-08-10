@@ -347,11 +347,60 @@ export default function App() {
   }
 
   const handleSelectStep = async (targetIndex) => {
-    if (isGameOver || targetIndex <= guesses.length) return;
+    if (!puzzleData || isGameOver || targetIndex <= guesses.length) return;
 
-    const skipsCount = targetIndex - guesses.length;
-    for (let i = 0; i < skipsCount; i++) {
-      await handleSkip();
+    try {
+      let currentCount = guesses.length;
+      let newGuesses = [...guesses];
+      let finalData = null;
+
+      while (currentCount <= targetIndex && currentCount < (puzzleData.maxGuesses || 6)) {
+        const bodyPayload = {
+          puzzleId: puzzleData.puzzleId,
+          anonId,
+          songId: null,
+          isSkip: true,
+          mode: gameMode,
+          targetSongId: puzzleData.targetSongId,
+          currentGuessesCount: currentCount
+        };
+
+        const res = await fetch(`${API_BASE_URL}/api/guess`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(bodyPayload)
+        });
+
+        if (!res.ok) break;
+        const data = await res.json();
+        finalData = data;
+
+        newGuesses.push({
+          guessNumber: data.guessNumber,
+          isCorrect: false,
+          isSkip: true,
+          guessedSong: null
+        });
+
+        currentCount++;
+        if (data.isGameOver) break;
+      }
+
+      setGuesses(newGuesses);
+
+      if (finalData?.isGameOver) {
+        setIsGameOver(true);
+        setIsSolved(false);
+        setTargetSong(finalData.targetSong);
+        const updatedStats = saveLocalStats(false);
+        setStats(updatedStats);
+        saveDailyState(newGuesses, true, false, finalData.targetSong);
+        setTimeout(() => setShowResult(true), 600);
+      } else {
+        saveDailyState(newGuesses, false, false, null);
+      }
+    } catch (err) {
+      console.error('Error skipping to target step:', err);
     }
   };
 
