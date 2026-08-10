@@ -151,56 +151,135 @@ export default function App() {
     setGameMode(newMode);
   };
 
-  const handleSpotifyImportSuccess = (importedData) => {
-    setSpotifyPlaylist(importedData);
+  const handleSelectCached = (playlist) => {
+    setSpotifyPlaylist(playlist);
     setGameMode('spotify');
     setPlayedSongIds([]);
-    fetchPuzzle('spotify', importedData.songIds, []);
+    fetchPuzzle('spotify', playlist.songIds, []);
   };
 
-  const handleBackgroundProgress = (msg) => {
-    if (msg.type === 'progress') {
+  // Persistent root background stream importer
+  const handleStartImport = async (playlistUrl) => {
+    try {
       setBgImportStatus({
         isImporting: true,
-        playlistName: msg.playlistName,
-        current: msg.current,
-        total: msg.total,
-        readyCount: msg.importedTracksCount,
+        playlistName: 'Spotify Playlist',
+        current: 0,
+        total: 50,
+        readyCount: 0,
         isComplete: false
       });
 
-      // Update active playlist song IDs live in background
-      if (msg.songIds && msg.songIds.length > 0) {
-        setSpotifyPlaylist((prev) => ({
-          playlistId: msg.playlistId,
-          playlistName: msg.playlistName,
-          importedTracksCount: msg.importedTracksCount,
-          songIds: msg.songIds
-        }));
+      const response = await fetch(`${API_BASE_URL}/api/spotify/import`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playlistUrl })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to import playlist');
       }
-    } else if (msg.type === 'complete') {
-      setBgImportStatus({
-        isImporting: false,
-        playlistName: msg.playlistName,
-        current: msg.totalPlaylistTracks,
-        total: msg.totalPlaylistTracks,
-        readyCount: msg.importedTracksCount,
-        isComplete: true
-      });
 
-      setSpotifyPlaylist({
-        playlistId: msg.playlistId,
-        playlistName: msg.playlistName,
-        importedTracksCount: msg.importedTracksCount,
-        songIds: msg.songIds
-      });
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+      let hasLaunchedGame = false;
 
-      saveCachedPlaylist(msg);
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-      // Hide status badge after 3.5 seconds
-      setTimeout(() => {
-        setBgImportStatus(null);
-      }, 3500);
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const msg = JSON.parse(line);
+
+            if (msg.type === 'init') {
+              setBgImportStatus({
+                isImporting: true,
+                playlistName: msg.playlistName,
+                current: 0,
+                total: msg.total,
+                readyCount: 0,
+                isComplete: false
+              });
+            } else if (msg.type === 'progress') {
+              setBgImportStatus({
+                isImporting: true,
+                playlistName: msg.playlistName,
+                current: msg.current,
+                total: msg.total,
+                readyCount: msg.importedTracksCount,
+                isComplete: false
+              });
+
+              if (msg.songIds && msg.songIds.length > 0) {
+                const updatedPl = {
+                  playlistId: msg.playlistId,
+                  playlistName: msg.playlistName,
+                  importedTracksCount: msg.importedTracksCount,
+                  songIds: msg.songIds
+                };
+                setSpotifyPlaylist(updatedPl);
+
+                if (!hasLaunchedGame) {
+                  hasLaunchedGame = true;
+                  setGameMode('spotify');
+                  setPlayedSongIds([]);
+                  fetchPuzzle('spotify', msg.songIds, []);
+                }
+              }
+            } else if (msg.type === 'first_match') {
+              if (msg.songIds && msg.songIds.length > 0) {
+                const updatedPl = {
+                  playlistId: msg.playlistId,
+                  playlistName: msg.playlistName,
+                  importedTracksCount: msg.importedTracksCount,
+                  songIds: msg.songIds
+                };
+                setSpotifyPlaylist(updatedPl);
+
+                if (!hasLaunchedGame) {
+                  hasLaunchedGame = true;
+                  setGameMode('spotify');
+                  setPlayedSongIds([]);
+                  fetchPuzzle('spotify', msg.songIds, []);
+                }
+              }
+            } else if (msg.type === 'complete') {
+              saveCachedPlaylist(msg);
+              setSpotifyPlaylist({
+                playlistId: msg.playlistId,
+                playlistName: msg.playlistName,
+                importedTracksCount: msg.importedTracksCount,
+                songIds: msg.songIds
+              });
+
+              setBgImportStatus({
+                isImporting: false,
+                playlistName: msg.playlistName,
+                current: msg.totalPlaylistTracks,
+                total: msg.totalPlaylistTracks,
+                readyCount: msg.importedTracksCount,
+                isComplete: true
+              });
+
+              setTimeout(() => {
+                setBgImportStatus(null);
+              }, 3500);
+            }
+          } catch (lineErr) {
+            console.warn('Line parse error:', lineErr);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Import error:', err);
+      setBgImportStatus(null);
     }
   };
 
@@ -314,38 +393,6 @@ export default function App() {
     }
   };
 
-  const handlePlayNextRandom = () => {
-    setShowResult(false);
-    fetchPuzzle(gameMode);
-  };
-
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', gap: 16 }}>
-        <div className="wave-bar" style={{ width: 6, height: 40, background: 'var(--accent-primary)', borderRadius: 3, animation: 'wave 1s infinite alternate' }} />
-        <p style={{ color: 'var(--text-muted)', fontWeight: 500 }}>
-          {gameMode === 'spotify' ? 'Loading Spotify Song...' : gameMode === 'unlimited' ? 'Loading Random Song...' : "Loading Today's Puzzle..."}
-        </p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div style={{ padding: 32, textAlign: 'center', color: '#ef4444' }}>
-        <h2>Unable to load game</h2>
-        <p style={{ marginTop: 8, color: 'var(--text-muted)' }}>{error}</p>
-        <button
-          className="btn-submit"
-          style={{ width: 'auto', marginTop: 16, padding: '0 24px' }}
-          onClick={() => window.location.reload()}
-        >
-          Retry Connection
-        </button>
-      </div>
-    );
-  }
-
   const handleSelectStep = async (targetIndex) => {
     if (!puzzleData || isGameOver || targetIndex <= guesses.length) return;
 
@@ -403,6 +450,38 @@ export default function App() {
       console.error('Error skipping to target step:', err);
     }
   };
+
+  const handlePlayNextRandom = () => {
+    setShowResult(false);
+    fetchPuzzle(gameMode);
+  };
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', gap: 16 }}>
+        <div className="wave-bar" style={{ width: 6, height: 40, background: 'var(--accent-primary)', borderRadius: 3, animation: 'wave 1s infinite alternate' }} />
+        <p style={{ color: 'var(--text-muted)', fontWeight: 500 }}>
+          {gameMode === 'spotify' ? 'Loading Spotify Song...' : gameMode === 'unlimited' ? 'Loading Random Song...' : "Loading Today's Puzzle..."}
+        </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ padding: 32, textAlign: 'center', color: '#ef4444' }}>
+        <h2>Unable to load game</h2>
+        <p style={{ marginTop: 8, color: 'var(--text-muted)' }}>{error}</p>
+        <button
+          className="btn-submit"
+          style={{ width: 'auto', marginTop: 16, padding: '0 24px' }}
+          onClick={() => window.location.reload()}
+        >
+          Retry Connection
+        </button>
+      </div>
+    );
+  }
 
   const currentIndex = guesses.length;
 
@@ -506,10 +585,9 @@ export default function App() {
       {showStats && <StatsModal stats={stats} onClose={() => setShowStats(false)} />}
       {showSpotifyModal && (
         <SpotifyModal
-          onImportSuccess={handleSpotifyImportSuccess}
-          onBackgroundProgress={handleBackgroundProgress}
+          onSelectCached={handleSelectCached}
+          onStartImport={handleStartImport}
           onClose={() => setShowSpotifyModal(false)}
-          apiBaseUrl={API_BASE_URL}
         />
       )}
       {showResult && (
