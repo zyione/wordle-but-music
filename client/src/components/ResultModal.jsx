@@ -1,10 +1,45 @@
-import React, { useState } from 'react';
-import { X, Share2, ExternalLink, Trophy, Music, Shuffle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Share2, ExternalLink, Trophy, Music, Shuffle, Play, Pause, Volume2 } from 'lucide-react';
 
 export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate, gameMode, onPlayNextUnlimited, onClose }) {
   const [copied, setCopied] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    // Auto-play preview audio when modal opens
+    if (audioRef.current && targetSong?.preview_url) {
+      audioRef.current.play().then(() => {
+        setIsPlaying(true);
+      }).catch((err) => {
+        console.warn('Auto-play blocked by browser policy:', err);
+        setIsPlaying(false);
+      });
+    }
+
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+    };
+  }, [targetSong?.preview_url]);
 
   if (!targetSong) return null;
+
+  const toggleAudio = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (isPlaying) {
+      audio.pause();
+      setIsPlaying(false);
+    } else {
+      audio.play().then(() => {
+        setIsPlaying(true);
+      }).catch(err => console.error('Audio play error:', err));
+    }
+  };
 
   // Generate Emoji Grid
   const generateShareText = () => {
@@ -20,7 +55,7 @@ export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate,
 
     const gridString = emojis.join('');
     const scoreStr = isSolved ? `${guesses.length}/6` : 'X/6';
-    const modeLabel = gameMode === 'unlimited' ? 'Unlimited ♾️' : (puzzleDate || '');
+    const modeLabel = gameMode === 'spotify' ? 'Spotify Playlist 🎧' : gameMode === 'unlimited' ? 'Unlimited ♾️' : (puzzleDate || '');
 
     return `Song Guesser ${modeLabel}\n🔊 ${scoreStr}\n\n${gridString}\n\nPlay at: ${window.location.origin}`;
   };
@@ -35,6 +70,8 @@ export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate,
 
   return (
     <div className="modal-overlay">
+      <audio ref={audioRef} src={targetSong.preview_url} preload="auto" onEnded={() => setIsPlaying(false)} />
+
       <div className="modal-card">
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -49,11 +86,38 @@ export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate,
         </div>
 
         <div className="reveal-card">
-          {targetSong.artwork_url ? (
-            <img src={targetSong.artwork_url} alt={targetSong.title} className="reveal-art" />
-          ) : (
-            <div className="reveal-art" style={{ background: '#1e293b' }} />
-          )}
+          <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+            {targetSong.artwork_url ? (
+              <img src={targetSong.artwork_url} alt={targetSong.title} className="reveal-art" />
+            ) : (
+              <div className="reveal-art" style={{ background: '#1e293b' }} />
+            )}
+
+            {/* Audio Toggle Floating Overlay Button */}
+            <button
+              onClick={toggleAudio}
+              style={{
+                position: 'absolute',
+                bottom: 8,
+                right: 8,
+                background: isPlaying ? '#10b981' : '#3b82f6',
+                border: 'none',
+                width: 44,
+                height: 44,
+                borderRadius: '50%',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                boxShadow: '0 4px 14px rgba(0,0,0,0.5)',
+                transition: 'all 0.2s ease'
+              }}
+              title={isPlaying ? 'Pause Audio' : 'Play Full Audio Preview'}
+            >
+              {isPlaying ? <Pause size={22} /> : <Play size={22} style={{ marginLeft: 2 }} />}
+            </button>
+          </div>
 
           <div>
             <h3 className="reveal-song-title">{targetSong.title}</h3>
@@ -64,6 +128,13 @@ export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate,
               </p>
             )}
           </div>
+
+          {isPlaying && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#10b981', fontSize: '0.8rem', fontWeight: 600 }}>
+              <Volume2 size={16} />
+              <span>Playing 30s audio preview...</span>
+            </div>
+          )}
 
           <div className="share-grid-box">
             {guesses.map((g, i) => (
@@ -76,18 +147,22 @@ export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate,
             ))}
           </div>
 
-          {gameMode === 'unlimited' ? (
+          {/* PLAY NEXT SONG BUTTON FOR UNLIMITED & SPOTIFY MODES */}
+          {gameMode !== 'daily' && (
             <button
               className="share-btn"
               onClick={onPlayNextUnlimited}
-              style={{ background: 'linear-gradient(135deg, #8b5cf6, #ec4899)', boxShadow: '0 4px 15px rgba(236, 72, 153, 0.3)' }}
+              style={{
+                background: gameMode === 'spotify' ? 'linear-gradient(135deg, #1db954, #059669)' : 'linear-gradient(135deg, #8b5cf6, #ec4899)',
+                boxShadow: gameMode === 'spotify' ? '0 4px 15px rgba(29, 185, 84, 0.3)' : '0 4px 15px rgba(236, 72, 153, 0.3)'
+              }}
             >
               <Shuffle size={18} />
               Play Next Song 🔀
             </button>
-          ) : null}
+          )}
 
-          <button className="share-btn" onClick={handleCopyShare} style={{ marginTop: gameMode === 'unlimited' ? 8 : 0 }}>
+          <button className="share-btn" onClick={handleCopyShare} style={{ marginTop: gameMode !== 'daily' ? 8 : 0 }}>
             <Share2 size={18} />
             {copied ? 'Copied to Clipboard!' : 'Share Your Result'}
           </button>
