@@ -118,14 +118,22 @@ Send a `POST` request to `http://localhost:4000/admin/puzzle`:
 
 ---
 
+## 🎮 Game Modes
+
+- **📅 Daily Mode**: 1 mystery song per calendar date. Progress is tracked and saved for today.
+- **♾️ Unlimited Mode**: Play non-stop with endless random songs! On win or loss, click **"Play Next Song 🔀"** to immediately start a new mystery track.
+
+---
+
 ## 🔌 API Endpoints Summary
 
 | Method | Route | Purpose |
 |---|---|---|
 | `GET` | `/api/config` | Returns audio snippet duration thresholds and max guesses |
-| `GET` | `/api/puzzle/today` | Returns today's puzzle ID & preview audio stream URL (hidden title/artist) |
+| `GET` | `/api/puzzle/today` | Returns today's daily puzzle ID & preview audio stream URL |
+| `GET` | `/api/puzzle/random` | Returns a random song puzzle for Unlimited Mode |
 | `GET` | `/api/search?q=` | Live autocomplete search against local song database |
-| `POST` | `/api/guess` | Body: `{ puzzleId, anonId, songId, isSkip }` → validates guess & tracks progress |
+| `POST` | `/api/guess` | Body: `{ puzzleId, anonId, songId, isSkip, mode }` → validates guess |
 | `POST` | `/admin/songs` | Body: `{ title, artist }` → fetches Deezer preview & artwork, adds to DB |
 | `POST` | `/admin/puzzle` | Body: `{ date, songId }` → schedules target song for a calendar date |
 | `GET` | `/admin/songs` | Returns list of all songs in database |
