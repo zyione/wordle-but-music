@@ -1,13 +1,49 @@
-import React, { useState } from 'react';
-import { Trophy, Award, Medal, Share2, LogOut, Check } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Trophy, Award, Medal, Share2, LogOut, Check, RefreshCw } from 'lucide-react';
 
-export default function PartyStandings({ partyState, anonId, onLeaveParty }) {
+export default function PartyStandings({ partyState, anonId, apiBaseUrl = '', onStateUpdate, onLeaveParty }) {
   const [copied, setCopied] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastRefreshedText, setLastRefreshedText] = useState('Just now');
 
   const standings = partyState?.standings || [];
+  const totalRounds = partyState?.numRounds || 5;
+
   const top1 = standings[0];
   const top2 = standings[1];
   const top3 = standings[2];
+
+  const hasUnfinishedPlayers = standings.some(s => s.roundsCompleted < totalRounds);
+
+  // Manual Refresh Handler
+  const handleRefreshStandings = async () => {
+    if (!partyState?.code) return;
+    try {
+      setRefreshing(true);
+      const baseUrl = apiBaseUrl || (typeof window !== 'undefined' ? window.location.origin : '');
+      const res = await fetch(`${baseUrl}/api/party/${partyState.code}`);
+      if (res.ok) {
+        const updatedState = await res.json();
+        onStateUpdate?.(updatedState);
+        setLastRefreshedText('Just now');
+      }
+    } catch (err) {
+      console.warn('Error refreshing party standings:', err);
+    } finally {
+      setTimeout(() => setRefreshing(false), 500);
+    }
+  };
+
+  // Auto-poll live scores every 3 seconds while players are still finishing rounds
+  useEffect(() => {
+    if (!hasUnfinishedPlayers || !partyState?.code) return;
+
+    const interval = setInterval(() => {
+      handleRefreshStandings();
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [hasUnfinishedPlayers, partyState?.code]);
 
   const handleCopyShare = () => {
     const lines = [`🎉 Party Versus Results (Room: ${partyState?.code})`];
@@ -29,25 +65,25 @@ export default function PartyStandings({ partyState, anonId, onLeaveParty }) {
         background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(139, 92, 246, 0.2))',
         border: '1px solid rgba(236, 72, 153, 0.4)',
         borderRadius: 24,
-        padding: 24,
+        padding: '24px 20px 20px',
         textAlign: 'center',
         boxShadow: '0 8px 30px rgba(0,0,0,0.5)'
       }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-          <Trophy size={40} color="#f59e0b" />
+          <Trophy size={42} color="#f59e0b" />
         </div>
         <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#fff' }}>
-          Party Game Complete!
+          {hasUnfinishedPlayers ? 'Party Game Standings' : 'Party Game Complete!'}
         </h2>
         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4 }}>
-          {partyState?.numRounds} Rounds Played • Room {partyState?.code}
+          {totalRounds} Rounds Total • Room {partyState?.code}
         </p>
 
-        {/* PODIUM VISUALIZATION */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 12, marginTop: 24, height: 140 }}>
+        {/* PODIUM VISUALIZATION WITH GENEROUS UN-OVERLAPPED HEIGHT */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 14, marginTop: 36, height: 190 }}>
           {/* 2nd Place */}
           {top2 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 90 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 95 }}>
               <div style={{
                 width: 44,
                 height: 44,
@@ -63,30 +99,29 @@ export default function PartyStandings({ partyState, anonId, onLeaveParty }) {
               }}>
                 {(top2.displayName[0] || '?').toUpperCase()}
               </div>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#fff', textAlign: 'center', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', width: '100%' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#fff', textAlign: 'center', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', width: '100%', marginBottom: 4 }}>
                 {top2.displayName}
               </span>
               <div style={{
                 background: 'linear-gradient(180deg, #94a3b8, #64748b)',
                 width: '100%',
-                height: 70,
+                height: 78,
                 borderRadius: '12px 12px 0 0',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontWeight: 900,
                 fontSize: '1.2rem',
-                color: '#fff',
-                marginTop: 6
+                color: '#fff'
               }}>
                 🥈 2nd
               </div>
             </div>
-          ) : <div style={{ width: 90 }} />}
+          ) : <div style={{ width: 95 }} />}
 
           {/* 1st Place */}
           {top1 && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 100 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 105 }}>
               <div style={{
                 width: 52,
                 height: 52,
@@ -104,21 +139,20 @@ export default function PartyStandings({ partyState, anonId, onLeaveParty }) {
               }}>
                 {(top1.displayName[0] || '?').toUpperCase()}
               </div>
-              <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#f59e0b', textAlign: 'center', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', width: '100%' }}>
+              <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#f59e0b', textAlign: 'center', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', width: '100%', marginBottom: 4 }}>
                 {top1.displayName}
               </span>
               <div style={{
                 background: 'linear-gradient(180deg, #f59e0b, #d97706)',
                 width: '100%',
-                height: 95,
+                height: 105,
                 borderRadius: '12px 12px 0 0',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontWeight: 900,
                 fontSize: '1.4rem',
-                color: '#fff',
-                marginTop: 6
+                color: '#fff'
               }}>
                 🥇 1st
               </div>
@@ -127,7 +161,7 @@ export default function PartyStandings({ partyState, anonId, onLeaveParty }) {
 
           {/* 3rd Place */}
           {top3 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 90 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 95 }}>
               <div style={{
                 width: 44,
                 height: 44,
@@ -143,30 +177,29 @@ export default function PartyStandings({ partyState, anonId, onLeaveParty }) {
               }}>
                 {(top3.displayName[0] || '?').toUpperCase()}
               </div>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#fff', textAlign: 'center', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', width: '100%' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#fff', textAlign: 'center', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', width: '100%', marginBottom: 4 }}>
                 {top3.displayName}
               </span>
               <div style={{
                 background: 'linear-gradient(180deg, #b45309, #78350f)',
                 width: '100%',
-                height: 50,
+                height: 56,
                 borderRadius: '12px 12px 0 0',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontWeight: 900,
                 fontSize: '1.1rem',
-                color: '#fff',
-                marginTop: 6
+                color: '#fff'
               }}>
                 🥉 3rd
               </div>
             </div>
-          ) : <div style={{ width: 90 }} />}
+          ) : <div style={{ width: 95 }} />}
         </div>
       </div>
 
-      {/* Full Leaderboard List */}
+      {/* Full Leaderboard List with Live Refresh Button */}
       <div style={{
         background: 'var(--bg-card)',
         border: '1px solid var(--bg-card-border)',
@@ -174,9 +207,43 @@ export default function PartyStandings({ partyState, anonId, onLeaveParty }) {
         padding: 20,
         display: 'flex',
         flexDirection: 'column',
-        gap: 8
+        gap: 10
       }}>
-        <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: 4 }}>Full Party Standings</h3>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <h3 style={{ fontSize: '0.95rem', fontWeight: 700 }}>Full Party Standings</h3>
+            {hasUnfinishedPlayers && (
+              <span style={{ fontSize: '0.72rem', color: '#ec4899', fontWeight: 600 }}>
+                • Auto-syncing live scores...
+              </span>
+            )}
+          </div>
+
+          {/* Refresh Standings Button */}
+          <button
+            onClick={handleRefreshStandings}
+            disabled={refreshing}
+            style={{
+              padding: '6px 12px',
+              borderRadius: 10,
+              background: 'rgba(236, 72, 153, 0.12)',
+              border: '1px solid rgba(236, 72, 153, 0.3)',
+              color: '#ec4899',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              cursor: refreshing ? 'default' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              transition: 'all 0.2s ease'
+            }}
+            title="Refresh Live Scores"
+          >
+            <RefreshCw size={14} style={{ animation: refreshing ? 'spin 1s linear infinite' : 'none' }} />
+            <span>{refreshing ? 'Updating...' : 'Refresh 🔄'}</span>
+          </button>
+        </div>
+
         {standings.map((s) => {
           const isMe = s.anonId === anonId;
           const medal = s.rank === 1 ? '🥇' : s.rank === 2 ? '🥈' : s.rank === 3 ? '🥉' : `#${s.rank}`;
@@ -216,7 +283,7 @@ export default function PartyStandings({ partyState, anonId, onLeaveParty }) {
                     {isMe && <span style={{ fontSize: '0.65rem', background: '#ec4899', color: '#fff', padding: '1px 6px', borderRadius: 10, fontWeight: 700 }}>YOU</span>}
                   </div>
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    {s.roundsCompleted} of {partyState?.numRounds} rounds completed
+                    {s.roundsCompleted} of {totalRounds} rounds completed
                   </span>
                 </div>
               </div>

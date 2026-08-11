@@ -247,6 +247,8 @@ export default function PartyGame({ partyState, anonId, apiBaseUrl, onStateUpdat
       <PartyStandings
         partyState={partyState}
         anonId={anonId}
+        apiBaseUrl={apiBaseUrl}
+        onStateUpdate={onStateUpdate}
         onLeaveParty={onLeaveParty}
       />
     );
