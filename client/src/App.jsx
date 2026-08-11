@@ -633,7 +633,7 @@ export default function App() {
 
       {/* RENDER PARTY MODE VIEW */}
       {gameMode === 'party' ? (
-        partyState?.status === 'playing' ? (
+        (partyState?.status === 'playing' || partyState?.status === 'finished') ? (
           <PartyGame
             partyState={partyState}
             anonId={anonId}

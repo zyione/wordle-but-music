@@ -193,19 +193,22 @@ export default function PartyLobby({ partyState, anonId, apiBaseUrl, onStartGame
       </div>
 
       {/* Start Game Control */}
-      <div style={{ textAlign: 'center', marginTop: 4 }}>
+      <div style={{ marginTop: 4 }}>
         {isHost ? (
           <button
             className="btn-submit"
             onClick={onStartGame}
             style={{
+              width: '100%',
               background: 'linear-gradient(135deg, #ec4899, #8b5cf6)',
-              padding: '14px 0',
+              padding: '14px 24px',
+              borderRadius: 16,
               fontSize: '1rem',
+              fontWeight: 800,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 8,
+              gap: 10,
               boxShadow: '0 8px 25px rgba(236, 72, 153, 0.4)'
             }}
           >

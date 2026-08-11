@@ -19,6 +19,7 @@ export default function PartyGame({ partyState, anonId, apiBaseUrl, onStateUpdat
   const [roundTimeMs, setRoundTimeMs] = useState(0);
   const [startTime, setStartTime] = useState(Date.now());
   const [hasSubmittedRound, setHasSubmittedRound] = useState(false);
+  const [showFinalStandings, setShowFinalStandings] = useState(false);
 
   const totalRounds = partyState?.numRounds || 5;
 
@@ -240,8 +241,8 @@ export default function PartyGame({ partyState, anonId, apiBaseUrl, onStateUpdat
     }
   };
 
-  // If party is finished or all rounds completed
-  if (partyState?.status === 'finished' || (isGameOver && currentRound >= totalRounds && hasSubmittedRound)) {
+  // If user requested to view final party standings
+  if (showFinalStandings) {
     return (
       <PartyStandings
         partyState={partyState}
@@ -345,22 +346,47 @@ export default function PartyGame({ partyState, anonId, apiBaseUrl, onStateUpdat
             </div>
           </div>
 
-          {currentRound < totalRounds && (
+          {currentRound < totalRounds ? (
             <button
               className="btn-submit"
               onClick={handleNextRound}
               style={{
+                width: '100%',
                 background: 'linear-gradient(135deg, #ec4899, #8b5cf6)',
-                padding: '14px 0',
+                padding: '14px 24px',
+                borderRadius: 16,
+                fontSize: '1rem',
+                fontWeight: 800,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 8,
+                gap: 10,
                 boxShadow: '0 8px 25px rgba(236, 72, 153, 0.4)'
               }}
             >
               <span>Next Round ({currentRound + 1} / {totalRounds})</span>
               <ArrowRight size={20} />
+            </button>
+          ) : (
+            <button
+              className="btn-submit"
+              onClick={() => setShowFinalStandings(true)}
+              style={{
+                width: '100%',
+                background: 'linear-gradient(135deg, #f59e0b, #ec4899)',
+                padding: '14px 24px',
+                borderRadius: 16,
+                fontSize: '1rem',
+                fontWeight: 800,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+                boxShadow: '0 8px 25px rgba(245, 158, 11, 0.4)'
+              }}
+            >
+              <Trophy size={20} />
+              <span>View Final Party Standings 🏆</span>
             </button>
           )}
         </div>
