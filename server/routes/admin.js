@@ -1,6 +1,8 @@
 import express from 'express';
 import db from '../db/db.js';
 import { fetchTrackMetadata } from '../services/deezerClient.js';
+import { resetToday } from '../db/resetToday.js';
+import { resetAll } from '../db/resetAll.js';
 
 const router = express.Router();
 
@@ -79,6 +81,29 @@ router.post('/admin/puzzle', (req, res) => {
   } catch (error) {
     console.error('Error scheduling puzzle:', error);
     res.status(500).json({ error: 'Failed to schedule puzzle' });
+  }
+});
+
+// POST /api/admin/reset/today - Reset today's attempts so everyone can replay today's daily puzzle
+router.post('/admin/reset/today', (req, res) => {
+  try {
+    const result = resetToday();
+    res.json({ message: "Successfully reset today's attempts. Players can now replay today's daily puzzle!", result });
+  } catch (error) {
+    console.error('Error resetting today:', error);
+    res.status(500).json({ error: 'Failed to reset today' });
+  }
+});
+
+// POST /api/admin/reset/all - Clear all play history while keeping table structures & songs database intact
+router.post('/admin/reset/all', (req, res) => {
+  try {
+    const { keepUsers = true } = req.body || {};
+    const result = resetAll({ keepUsers });
+    res.json({ message: 'Successfully reset all game attempts and history. Songs database and structure preserved!', result });
+  } catch (error) {
+    console.error('Error resetting all data:', error);
+    res.status(500).json({ error: 'Failed to reset all data' });
   }
 });
 

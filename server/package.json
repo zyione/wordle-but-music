@@ -8,7 +8,9 @@
     "start": "node index.js",
     "migrate": "node db/migrate.js",
     "seed": "node db/seed.js",
-    "schedule": "node db/scheduleToday.js"
+    "schedule": "node db/scheduleToday.js",
+    "reset:today": "node db/resetToday.js",
+    "reset:all": "node db/resetAll.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.2",
