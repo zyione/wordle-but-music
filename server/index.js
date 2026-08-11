@@ -74,7 +74,7 @@ app.use('/api', audioProxyRoutes);
 app.use('/api', userRoutes);
 app.use('/api', leaderboardRoutes);
 app.use('/api', partyRoutes);
-app.use('/', adminRoutes);
+app.use('/api', adminRoutes);
 
 // Healthcheck
 app.get('/health', (req, res) => {

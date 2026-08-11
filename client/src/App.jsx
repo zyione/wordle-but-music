@@ -21,7 +21,10 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000
 if (typeof window !== 'undefined') {
   window.resetToday = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/admin/reset/today`, { method: 'POST' });
+      let res = await fetch(`${API_BASE_URL}/api/admin/reset/today`, { method: 'POST' });
+      if (!res.ok) {
+        res = await fetch(`${API_BASE_URL}/admin/reset/today`, { method: 'POST' });
+      }
       const data = await res.json();
       const dateKey = new Date().toISOString().split('T')[0];
       localStorage.removeItem(`song_guesser_${dateKey}`);
@@ -36,7 +39,10 @@ if (typeof window !== 'undefined') {
 
   window.resetAll = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/admin/reset/all`, { method: 'POST' });
+      let res = await fetch(`${API_BASE_URL}/api/admin/reset/all`, { method: 'POST' });
+      if (!res.ok) {
+        res = await fetch(`${API_BASE_URL}/admin/reset/all`, { method: 'POST' });
+      }
       const data = await res.json();
       localStorage.clear();
       console.log('✅ Reset All Success:', data);
