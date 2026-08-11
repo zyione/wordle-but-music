@@ -18,6 +18,34 @@ if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
 
+// Supabase client instance setup
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
+export const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
+
+// Download remote persistent database from Supabase Cloud on boot if configured
+if (supabase) {
+  try {
+    const { data: buckets } = await supabase.storage.listBuckets();
+    if (!buckets?.some(b => b.name === 'database')) {
+      await supabase.storage.createBucket('database', { public: true });
+    }
+
+    const { data, error } = await supabase.storage.from('database').download('songs.db');
+    if (data && !error) {
+      const arrayBuffer = await data.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      fs.writeFileSync(resolvedPath, buffer);
+      console.log('☁️ Successfully restored persistent database from Supabase Cloud!');
+    } else {
+      console.log('☁️ No remote database found in Supabase Cloud yet. Starting fresh instance.');
+    }
+  } catch (err) {
+    console.warn('☁️ Supabase Cloud boot download warning:', err.message);
+  }
+}
+
 const SQL = await initSqlJs();
 
 let dbInstance;
@@ -28,11 +56,35 @@ if (fs.existsSync(resolvedPath)) {
   dbInstance = new SQL.Database();
 }
 
+let syncTimer = null;
+function syncToSupabase() {
+  if (!supabase) return;
+  if (syncTimer) clearTimeout(syncTimer);
+  syncTimer = setTimeout(async () => {
+    try {
+      if (!fs.existsSync(resolvedPath)) return;
+      const fileBuffer = fs.readFileSync(resolvedPath);
+      const { error } = await supabase.storage.from('database').upload('songs.db', fileBuffer, {
+        upsert: true,
+        contentType: 'application/x-sqlite3'
+      });
+      if (error) {
+        console.warn('☁️ Supabase sync warning:', error.message);
+      } else {
+        console.log('☁️ Database synced to Supabase Cloud Storage.');
+      }
+    } catch (err) {
+      console.warn('☁️ Supabase sync error:', err.message);
+    }
+  }, 1500);
+}
+
 function saveDb() {
   try {
     const data = dbInstance.export();
     const buffer = Buffer.from(data);
     fs.writeFileSync(resolvedPath, buffer);
+    syncToSupabase();
   } catch (err) {
     console.error('Error saving SQLite database file:', err);
   }
@@ -84,10 +136,14 @@ const db = {
   }
 };
 
-// Supabase client instance (optional when SUPABASE_URL & SUPABASE_KEY are provided in production)
-const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-
-export const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
+// Sync on process termination (e.g., Render container shutdown)
+process.on('SIGINT', () => {
+  saveDb();
+  process.exit(0);
+});
+process.on('SIGTERM', () => {
+  saveDb();
+  process.exit(0);
+});
 
 export default db;
