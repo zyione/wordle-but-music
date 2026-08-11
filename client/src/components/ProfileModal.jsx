@@ -5,7 +5,7 @@ const PRESET_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#
 
 export default function ProfileModal({ userProfile, apiBaseUrl = '', anonId = '', onSaveProfile, onClose }) {
   const [step, setStep] = useState(1); // 1 = Name Input, 2 = PIN Input & Login/Register
-  const [displayName, setDisplayName] = useState(userProfile?.displayName || '');
+  const [displayName, setDisplayName] = useState(userProfile?.displayName || localStorage.getItem('song_guesser_saved_username') || '');
   const [pin, setPin] = useState(localStorage.getItem('song_guesser_user_pin') || '');
   const [avatarColor, setAvatarColor] = useState(userProfile?.avatarColor || PRESET_COLORS[0]);
   

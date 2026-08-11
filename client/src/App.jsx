@@ -146,7 +146,7 @@ export default function App() {
     };
   }, []);
 
-  // Load User Profile on mount
+  // Load User Profile on mount with persistent account memory
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -155,10 +155,29 @@ export default function App() {
           const data = await res.json();
           if (data.profile) {
             setUserProfile(data.profile);
-          } else {
-            setShowProfileModal(true);
+            return;
           }
         }
+
+        // If no active profile found for anonId, try silent auto-login using saved account credentials
+        const savedName = localStorage.getItem('song_guesser_saved_username');
+        const savedPin = localStorage.getItem('song_guesser_user_pin');
+
+        if (savedName && savedPin) {
+          const autoRes = await fetch(`${API_BASE_URL}/api/users/profile`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ anonId, displayName: savedName, pin: savedPin })
+          });
+          if (autoRes.ok) {
+            const autoData = await autoRes.json();
+            setUserProfile(autoData);
+            return;
+          }
+        }
+
+        // Only show profile modal for new un-authenticated players
+        setShowProfileModal(true);
       } catch (err) {
         console.warn('Profile fetch warning:', err);
       }
@@ -178,6 +197,9 @@ export default function App() {
         return { error: data.error || 'Failed to save profile' };
       }
       setUserProfile(data);
+      // Remember account credentials locally so user never has to log in again on future visits
+      localStorage.setItem('song_guesser_saved_username', displayName);
+      localStorage.setItem('song_guesser_user_pin', pin);
       // Re-fetch daily puzzle to sync attempt status cross-device
       fetchPuzzle('daily');
       return { success: true, profile: data };
