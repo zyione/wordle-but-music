@@ -5,6 +5,33 @@ const router = express.Router();
 
 const PRESET_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4'];
 
+// GET /api/users/check-name?displayName=... - Check if a username is registered
+router.get('/users/check-name', (req, res) => {
+  try {
+    const { displayName, anonId } = req.query;
+    if (!displayName || !displayName.trim()) {
+      return res.status(400).json({ error: 'displayName parameter is required' });
+    }
+
+    const cleanName = displayName.trim();
+    const existing = db.prepare('SELECT id, anon_id, display_name FROM users WHERE LOWER(display_name) = LOWER(?)').get(cleanName);
+
+    if (!existing) {
+      return res.json({ taken: false, isSelf: false, displayName: cleanName });
+    }
+
+    const isSelf = existing.anon_id === anonId;
+    return res.json({
+      taken: !isSelf,
+      isSelf,
+      displayName: existing.display_name
+    });
+  } catch (error) {
+    console.error('Error checking username:', error);
+    res.status(500).json({ error: 'Failed to check username' });
+  }
+});
+
 // POST /api/users/profile - Register, update, or log in to a profile using 4-digit PIN
 router.post('/users/profile', (req, res) => {
   try {
@@ -33,8 +60,23 @@ router.post('/users/profile', (req, res) => {
       // Check 4-digit PIN to authorize login/claim
       if (userByName.pin && userByName.pin !== cleanPin) {
         return res.status(401).json({
-          error: `"${cleanName}" is already claimed! Enter the correct 4-digit PIN to log in, or choose a different name.`
+          error: `Incorrect 4-digit PIN for "${cleanName}". Enter the correct PIN or pick another name.`
         });
+      }
+
+      // Re-assign previous sessions in database to current anonId so daily attempts follow user cross-device
+      try {
+        const oldSession = db.prepare('SELECT id FROM sessions WHERE anon_id = ?').get(userByName.anon_id);
+        let newSession = db.prepare('SELECT id FROM sessions WHERE anon_id = ?').get(anonId);
+        if (!newSession) {
+          const sRes = db.prepare('INSERT INTO sessions (anon_id) VALUES (?)').run(anonId);
+          newSession = { id: sRes.lastInsertRowid };
+        }
+        if (oldSession && newSession) {
+          db.prepare('UPDATE attempts SET session_id = ? WHERE session_id = ?').run(newSession.id, oldSession.id);
+        }
+      } catch (err) {
+        console.warn('Session attempt transfer warning:', err);
       }
 
       // PIN matches or profile has no PIN set yet -> Log in / Claim profile!

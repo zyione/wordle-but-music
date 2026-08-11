@@ -51,10 +51,36 @@ router.get('/puzzle/today', async (req, res) => {
     let userAttempt = null;
 
     if (anonId) {
-      const session = db.prepare('SELECT id FROM sessions WHERE anon_id = ?').get(anonId);
-      if (session) {
-        const attempt = db.prepare('SELECT * FROM attempts WHERE puzzle_id = ? AND session_id = ?').get(puzzle.puzzle_id, session.id);
-        if (attempt) {
+      let session = db.prepare('SELECT id FROM sessions WHERE anon_id = ?').get(anonId);
+      if (!session) {
+        const sRes = db.prepare('INSERT INTO sessions (anon_id) VALUES (?)').run(anonId);
+        session = { id: sRes.lastInsertRowid };
+      }
+
+      let attempt = db.prepare('SELECT * FROM attempts WHERE puzzle_id = ? AND session_id = ?').get(puzzle.puzzle_id, session.id);
+
+      if (!attempt) {
+        // Cross-device sync: check if user completed today's puzzle under their username on another device
+        const user = db.prepare('SELECT display_name FROM users WHERE anon_id = ?').get(anonId);
+        if (user && user.display_name) {
+          const crossDeviceAttempt = db.prepare(`
+            SELECT a.*
+            FROM attempts a
+            JOIN sessions s ON a.session_id = s.id
+            JOIN users u ON u.anon_id = s.anon_id
+            WHERE a.puzzle_id = ? AND LOWER(u.display_name) = LOWER(?)
+            ORDER BY a.id DESC
+            LIMIT 1
+          `).get(puzzle.puzzle_id, user.display_name);
+
+          if (crossDeviceAttempt) {
+            db.prepare('UPDATE attempts SET session_id = ? WHERE id = ?').run(session.id, crossDeviceAttempt.id);
+            attempt = crossDeviceAttempt;
+          }
+        }
+      }
+
+      if (attempt) {
           const rawGuesses = db.prepare(`
             SELECT g.guess_number as guessNumber, g.is_correct as isCorrect, g.guessed_song_id as guessedSongId,
                    s.id, s.title, s.artist, s.artwork_url as artworkUrl
@@ -96,7 +122,6 @@ router.get('/puzzle/today', async (req, res) => {
           };
         }
       }
-    }
 
     res.json({
       puzzleId: puzzle.puzzle_id,

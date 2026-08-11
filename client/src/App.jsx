@@ -178,6 +178,8 @@ export default function App() {
         return { error: data.error || 'Failed to save profile' };
       }
       setUserProfile(data);
+      // Re-fetch daily puzzle to sync attempt status cross-device
+      fetchPuzzle('daily');
       return { success: true, profile: data };
     } catch (err) {
       console.error('Error saving profile:', err);
@@ -800,6 +802,8 @@ export default function App() {
       {showProfileModal && (
         <ProfileModal
           userProfile={userProfile}
+          apiBaseUrl={API_BASE_URL}
+          anonId={anonId}
           onSaveProfile={handleSaveProfile}
           onClose={() => setShowProfileModal(false)}
         />
