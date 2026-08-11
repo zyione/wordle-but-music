@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     anon_id TEXT UNIQUE NOT NULL,
     display_name TEXT NOT NULL,
+    pin TEXT,
     avatar_color TEXT DEFAULT '#3b82f6',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

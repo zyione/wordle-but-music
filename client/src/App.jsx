@@ -128,19 +128,22 @@ export default function App() {
     fetchProfile();
   }, [anonId]);
 
-  const handleSaveProfile = async ({ displayName, avatarColor }) => {
+  const handleSaveProfile = async ({ displayName, pin, avatarColor }) => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/users/profile`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ anonId, displayName, avatarColor })
+        body: JSON.stringify({ anonId, displayName, pin, avatarColor })
       });
-      if (res.ok) {
-        const data = await res.json();
-        setUserProfile(data);
+      const data = await res.json();
+      if (!res.ok) {
+        return { error: data.error || 'Failed to save profile' };
       }
+      setUserProfile(data);
+      return { success: true, profile: data };
     } catch (err) {
       console.error('Error saving profile:', err);
+      return { error: 'Server connection error. Please try again.' };
     }
   };
 
