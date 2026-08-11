@@ -153,7 +153,7 @@ export default function App() {
       setError(null);
       setStartTime(Date.now());
 
-      let endpoint = '/api/puzzle/today';
+      let endpoint = `/api/puzzle/today?anonId=${anonId}`;
 
       if (mode === 'unlimited') {
         const excludeParam = currentExcludes.length > 0 ? `?excludeIds=${currentExcludes.join(',')}` : '';
@@ -189,7 +189,22 @@ export default function App() {
       if (mode === 'daily') {
         const storageKey = `song_guesser_${data.puzzleDate}`;
         const savedState = localStorage.getItem(storageKey);
-        if (savedState) {
+
+        if (data.userAttempt && data.userAttempt.guesses?.length) {
+          setGuesses(data.userAttempt.guesses);
+          setIsGameOver(data.userAttempt.isGameOver);
+          setIsSolved(data.userAttempt.isSolved);
+          setTargetSong(data.userAttempt.targetSong || null);
+          setGameScore(data.userAttempt.score || 0);
+          setShowResult(false);
+          localStorage.setItem(storageKey, JSON.stringify({
+            guesses: data.userAttempt.guesses,
+            isGameOver: data.userAttempt.isGameOver,
+            isSolved: data.userAttempt.isSolved,
+            targetSong: data.userAttempt.targetSong,
+            score: data.userAttempt.score || 0
+          }));
+        } else if (savedState) {
           const parsed = JSON.parse(savedState);
           setGuesses(parsed.guesses || []);
           setIsGameOver(parsed.isGameOver || false);
@@ -666,6 +681,8 @@ export default function App() {
 
           <Player
             previewUrl={puzzleData?.previewUrl}
+            songId={puzzleData?.targetSongId}
+            apiBaseUrl={API_BASE_URL}
             guessDurationsMs={puzzleData?.guessDurationsMs}
             currentIndex={guesses.length}
             isGameOver={isGameOver}
@@ -781,6 +798,7 @@ export default function App() {
           puzzleDate={puzzleData?.puzzleDate}
           gameMode={gameMode}
           gameScore={gameScore}
+          apiBaseUrl={API_BASE_URL}
           onPlayNextUnlimited={handlePlayNextRandom}
           onClose={() => setShowResult(false)}
         />

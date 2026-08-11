@@ -90,10 +90,10 @@ router.post('/party/:code/start', (req, res) => {
 });
 
 // GET /api/party/:code/round/:roundNumber - Get specific round details & audio stream
-router.get('/party/:code/round/:roundNumber', (req, res) => {
+router.get('/party/:code/round/:roundNumber', async (req, res) => {
   try {
     const { code, roundNumber } = req.params;
-    const roundData = getPartyRoundSong(code, roundNumber);
+    const roundData = await getPartyRoundSong(code, roundNumber);
     const config = getSnippetConfig();
 
     res.json({

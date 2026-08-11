@@ -1,6 +1,7 @@
 import express from 'express';
 import db from '../db/db.js';
 import { scheduleToday } from '../db/scheduleToday.js';
+import { ensureFreshPreviewUrl } from '../services/previewRefresher.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -16,11 +17,13 @@ function getSnippetConfig() {
 }
 
 // GET today's puzzle
-router.get('/puzzle/today', (req, res) => {
+router.get('/puzzle/today', async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
+    const anonId = (req.query.anonId || '').toString();
+
     let puzzle = db.prepare(`
-      SELECT p.id as puzzle_id, p.puzzle_date, s.id as song_id, s.title, s.artist, s.preview_url
+      SELECT p.id as puzzle_id, p.puzzle_date, s.id as song_id, s.title, s.artist, s.album, s.artwork_url, s.preview_url, s.source_track_id
       FROM puzzles p
       JOIN songs s ON p.song_id = s.id
       WHERE p.puzzle_date = ?
@@ -30,7 +33,7 @@ router.get('/puzzle/today', (req, res) => {
       const created = scheduleToday();
       if (created) {
         puzzle = db.prepare(`
-          SELECT p.id as puzzle_id, p.puzzle_date, s.id as song_id, s.title, s.artist, s.preview_url
+          SELECT p.id as puzzle_id, p.puzzle_date, s.id as song_id, s.title, s.artist, s.album, s.artwork_url, s.preview_url, s.source_track_id
           FROM puzzles p
           JOIN songs s ON p.song_id = s.id
           WHERE p.id = ?
@@ -43,14 +46,67 @@ router.get('/puzzle/today', (req, res) => {
     }
 
     const config = getSnippetConfig();
+    const freshPreviewUrl = await ensureFreshPreviewUrl(puzzle.song_id, puzzle.title, puzzle.artist, puzzle.preview_url);
+
+    let userAttempt = null;
+
+    if (anonId) {
+      const session = db.prepare('SELECT id FROM sessions WHERE anon_id = ?').get(anonId);
+      if (session) {
+        const attempt = db.prepare('SELECT * FROM attempts WHERE puzzle_id = ? AND session_id = ?').get(puzzle.puzzle_id, session.id);
+        if (attempt) {
+          const rawGuesses = db.prepare(`
+            SELECT g.guess_number as guessNumber, g.is_correct as isCorrect, g.guessed_song_id as guessedSongId,
+                   s.id, s.title, s.artist, s.artwork_url as artworkUrl
+            FROM guesses g
+            LEFT JOIN songs s ON g.guessed_song_id = s.id
+            WHERE g.attempt_id = ?
+            ORDER BY g.guess_number ASC
+          `).all(attempt.id);
+
+          const formattedGuesses = rawGuesses.map(g => ({
+            guessNumber: g.guessNumber,
+            isCorrect: Boolean(g.isCorrect),
+            isSkip: !g.guessedSongId,
+            guessedSong: g.guessedSongId ? {
+              id: g.id,
+              title: g.title,
+              artist: g.artist,
+              artwork_url: g.artworkUrl
+            } : null
+          }));
+
+          const maxGuesses = config.maxGuesses || 6;
+          const isGameOver = Boolean(attempt.is_solved || attempt.guesses_used >= maxGuesses);
+
+          userAttempt = {
+            guesses: formattedGuesses,
+            isGameOver,
+            isSolved: Boolean(attempt.is_solved),
+            score: attempt.score || 0,
+            targetSong: isGameOver ? {
+              id: puzzle.song_id,
+              title: puzzle.title,
+              artist: puzzle.artist,
+              album: puzzle.album,
+              artwork_url: puzzle.artwork_url,
+              preview_url: freshPreviewUrl,
+              source_track_id: puzzle.source_track_id
+            } : null
+          };
+        }
+      }
+    }
 
     res.json({
       puzzleId: puzzle.puzzle_id,
       puzzleDate: puzzle.puzzle_date,
-      previewUrl: puzzle.preview_url,
+      targetSongId: puzzle.song_id,
+      previewUrl: freshPreviewUrl,
       maxGuesses: config.maxGuesses,
       guessDurationsMs: config.guessDurationsMs,
-      mode: 'daily'
+      mode: 'daily',
+      userAttempt
     });
   } catch (error) {
     console.error('Error fetching today puzzle:', error);
@@ -59,7 +115,7 @@ router.get('/puzzle/today', (req, res) => {
 });
 
 // GET random puzzle for UNLIMITED mode (excluding previously played song IDs in session)
-router.get('/puzzle/random', (req, res) => {
+router.get('/puzzle/random', async (req, res) => {
   try {
     const rawExclude = (req.query.excludeIds || '').toString();
     const excludeIds = rawExclude.split(',').map(Number).filter(Boolean);
@@ -88,11 +144,12 @@ router.get('/puzzle/random', (req, res) => {
     }
 
     const config = getSnippetConfig();
+    const freshPreviewUrl = await ensureFreshPreviewUrl(song.id, song.title, song.artist, song.preview_url);
 
     res.json({
       puzzleId: `unlimited_${song.id}_${Date.now()}`,
       targetSongId: song.id,
-      previewUrl: song.preview_url,
+      previewUrl: freshPreviewUrl,
       maxGuesses: config.maxGuesses,
       guessDurationsMs: config.guessDurationsMs,
       mode: 'unlimited',

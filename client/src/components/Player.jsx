@@ -1,15 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, Volume2, Volume1, VolumeX, AlertCircle } from 'lucide-react';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://wordle-but-music.onrender.com';
+const DEFAULT_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 
 export default function Player({
   previewUrl,
   guessDurationsMs = [1000, 2000, 4000, 7000, 11000, 16000],
   currentIndex,
   isGameOver,
-  onSelectStep
+  onSelectStep,
+  songId,
+  apiBaseUrl
 }) {
+  const activeBaseUrl = apiBaseUrl || DEFAULT_API_BASE_URL;
   const audioRef = useRef(null);
   const timerRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -33,7 +36,9 @@ export default function Player({
     : (guessDurationsMs[Math.min(currentIndex, guessDurationsMs.length - 1)] || 16000);
 
   const activeAudioSrc = previewUrl
-    ? (previewUrl.startsWith('data:') || previewUrl.startsWith('blob:') ? previewUrl : `${API_BASE_URL}/api/audio/proxy?url=${encodeURIComponent(previewUrl)}`)
+    ? (previewUrl.startsWith('data:') || previewUrl.startsWith('blob:')
+        ? previewUrl
+        : `${activeBaseUrl}/api/audio/proxy?url=${encodeURIComponent(previewUrl)}${songId ? `&songId=${songId}` : ''}`)
     : '';
 
   // Update audio element volume whenever state changes

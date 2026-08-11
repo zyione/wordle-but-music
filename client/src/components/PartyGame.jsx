@@ -307,6 +307,8 @@ export default function PartyGame({ partyState, anonId, apiBaseUrl, onStateUpdat
 
       <Player
         previewUrl={roundData?.previewUrl}
+        songId={roundData?.targetSongId}
+        apiBaseUrl={apiBaseUrl}
         guessDurationsMs={roundData?.guessDurationsMs}
         currentIndex={currentIndex}
         isGameOver={isGameOver}

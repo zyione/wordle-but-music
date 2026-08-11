@@ -17,26 +17,7 @@ function getSnippetConfig() {
 }
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-async function ensureFreshPreviewUrl(songId, title, artist, currentUrl) {
-  try {
-    if (currentUrl) {
-      const testRes = await fetch(currentUrl, { method: 'HEAD' }).catch(() => null);
-      if (testRes && testRes.ok) {
-        return currentUrl;
-      }
-    }
-
-    const fresh = await fetchTrackMetadata(title, artist);
-    if (fresh && fresh.preview_url) {
-      db.prepare('UPDATE songs SET preview_url = ? WHERE id = ?').run(fresh.preview_url, songId);
-      return fresh.preview_url;
-    }
-  } catch (err) {
-    console.warn('Error refreshing preview URL:', err.message);
-  }
-  return currentUrl;
-}
+import { ensureFreshPreviewUrl } from '../services/previewRefresher.js';
 
 // Import tracks from a Spotify playlist URL with streaming NDJSON progress & instant first match
 router.post('/spotify/import', async (req, res) => {

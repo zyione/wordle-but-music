@@ -2,6 +2,7 @@ import db from '../db/db.js';
 import { parseSpotifyPlaylist } from './spotifyClient.js';
 import { fetchTrackMetadata } from './deezerClient.js';
 import { calculateScore } from './scoring.js';
+import { ensureFreshPreviewUrl } from './previewRefresher.js';
 
 // Seeded PRNG (Mulberry32) for deterministic song ordering across all party members
 function mulberry32(a) {
@@ -218,7 +219,7 @@ export function startParty(partyCode, hostAnonId) {
   return getPartyState(cleanCode, hostAnonId);
 }
 
-export function getPartyRoundSong(partyCode, roundNumber) {
+export async function getPartyRoundSong(partyCode, roundNumber) {
   const cleanCode = (partyCode || '').trim().toUpperCase();
   const party = db.prepare('SELECT * FROM parties WHERE code = ?').get(cleanCode);
 
@@ -240,11 +241,13 @@ export function getPartyRoundSong(partyCode, roundNumber) {
     throw new Error('Round song not found in database.');
   }
 
+  const freshPreviewUrl = await ensureFreshPreviewUrl(song.id, song.title, song.artist, song.preview_url);
+
   return {
     roundNumber: Number(roundNumber),
     totalRounds: songIds.length,
     songId: song.id,
-    previewUrl: song.preview_url
+    previewUrl: freshPreviewUrl
   };
 }
 

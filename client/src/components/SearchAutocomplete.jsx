@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, FastForward, CheckCircle } from 'lucide-react';
 
-export default function SearchAutocomplete({ onMakeGuess, onSkip, disabled, apiBaseUrl = 'https://wordle-but-music.onrender.com' }) {
+const DEFAULT_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+
+export default function SearchAutocomplete({ onMakeGuess, onSkip, disabled, apiBaseUrl = DEFAULT_API_BASE_URL }) {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [selectedSong, setSelectedSong] = useState(null);

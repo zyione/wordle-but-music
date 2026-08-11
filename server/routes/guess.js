@@ -1,6 +1,7 @@
 import express from 'express';
 import db from '../db/db.js';
 import { calculateScore } from '../services/scoring.js';
+import { ensureFreshPreviewUrl } from '../services/previewRefresher.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -16,7 +17,7 @@ function getMaxGuesses() {
   return config.maxGuesses || 6;
 }
 
-router.post('/guess', (req, res) => {
+router.post('/guess', async (req, res) => {
   try {
     const {
       puzzleId,
@@ -114,6 +115,7 @@ router.post('/guess', (req, res) => {
 
     // If attempt is already solved or completed
     if (attempt.is_solved || attempt.guesses_used >= maxGuesses) {
+      const freshUrl = await ensureFreshPreviewUrl(puzzle.song_id, puzzle.title, puzzle.artist, puzzle.preview_url);
       return res.json({
         isCorrect: Boolean(attempt.is_solved),
         isGameOver: true,
@@ -125,7 +127,7 @@ router.post('/guess', (req, res) => {
           artist: puzzle.artist,
           album: puzzle.album,
           artwork_url: puzzle.artwork_url,
-          preview_url: puzzle.preview_url,
+          preview_url: freshUrl,
           source_track_id: puzzle.source_track_id
         }
       });
@@ -176,6 +178,20 @@ router.post('/guess', (req, res) => {
       guessedSongInfo = db.prepare('SELECT id, title, artist, artwork_url FROM songs WHERE id = ?').get(songId);
     }
 
+    let targetSongData = null;
+    if (isGameOver) {
+      const freshUrl = await ensureFreshPreviewUrl(puzzle.song_id, puzzle.title, puzzle.artist, puzzle.preview_url);
+      targetSongData = {
+        id: puzzle.song_id,
+        title: puzzle.title,
+        artist: puzzle.artist,
+        album: puzzle.album,
+        artwork_url: puzzle.artwork_url,
+        preview_url: freshUrl,
+        source_track_id: puzzle.source_track_id
+      };
+    }
+
     res.json({
       guessNumber: nextGuessNumber,
       addedSkips: increment,
@@ -185,15 +201,7 @@ router.post('/guess', (req, res) => {
       guessedSong: guessedSongInfo,
       guessesUsed: newGuessesUsed,
       score: finalScore,
-      targetSong: isGameOver ? {
-        id: puzzle.song_id,
-        title: puzzle.title,
-        artist: puzzle.artist,
-        album: puzzle.album,
-        artwork_url: puzzle.artwork_url,
-        preview_url: puzzle.preview_url,
-        source_track_id: puzzle.source_track_id
-      } : null
+      targetSong: targetSongData
     });
   } catch (error) {
     console.error('Error processing guess:', error);
