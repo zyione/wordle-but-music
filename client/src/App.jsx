@@ -17,6 +17,38 @@ import { Shuffle, Loader2, CheckCircle2 } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 
+// Global Console Admin Helpers for resetting data cleanly
+if (typeof window !== 'undefined') {
+  window.resetToday = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/reset/today`, { method: 'POST' });
+      const data = await res.json();
+      const dateKey = new Date().toISOString().split('T')[0];
+      localStorage.removeItem(`song_guesser_${dateKey}`);
+      console.log('✅ Reset Today Success:', data);
+      alert("Today's daily puzzle reset successfully! Page will now reload.");
+      window.location.reload();
+    } catch (err) {
+      console.error('Reset Today Failed:', err);
+      alert('Failed to reset today: ' + err.message);
+    }
+  };
+
+  window.resetAll = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/reset/all`, { method: 'POST' });
+      const data = await res.json();
+      localStorage.clear();
+      console.log('✅ Reset All Success:', data);
+      alert('All game history reset successfully! Page will now reload.');
+      window.location.reload();
+    } catch (err) {
+      console.error('Reset All Failed:', err);
+      alert('Failed to reset all: ' + err.message);
+    }
+  };
+}
+
 function getAnonId() {
   let id = localStorage.getItem('song_guesser_anon_id');
   if (!id) {
