@@ -229,7 +229,6 @@ export default function App() {
 
       if (mode === 'daily') {
         const storageKey = `song_guesser_${data.puzzleDate}`;
-        const savedState = localStorage.getItem(storageKey);
 
         if (data.userAttempt && data.userAttempt.guesses?.length) {
           setGuesses(data.userAttempt.guesses);
@@ -245,15 +244,10 @@ export default function App() {
             targetSong: data.userAttempt.targetSong,
             score: data.userAttempt.score || 0
           }));
-        } else if (savedState) {
-          const parsed = JSON.parse(savedState);
-          setGuesses(parsed.guesses || []);
-          setIsGameOver(parsed.isGameOver || false);
-          setIsSolved(parsed.isSolved || false);
-          setTargetSong(parsed.targetSong || null);
-          setGameScore(parsed.score || 0);
-          setShowResult(false);
         } else {
+          // Server has no recorded attempt for today (fresh day or admin reset)
+          // Clear stale local storage and reset game board fresh!
+          localStorage.removeItem(storageKey);
           setGuesses([]);
           setIsGameOver(false);
           setIsSolved(false);
