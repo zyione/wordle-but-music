@@ -1,3 +1,4 @@
+import useGameRound from './hooks/useGameRound.js';
 import { getSession } from './lib/api.js';
 import { apiFetch as fetch } from './lib/api.js';
 import React, { useState, useEffect } from 'react';
@@ -44,7 +45,6 @@ export default function App() {
   const [gameMode, setGameMode] = useState('daily'); // 'daily' | 'unlimited' | 'spotify' | 'party'
   const [spotifyPlaylist, setSpotifyPlaylist] = useState(null);
   const [showSpotifyModal, setShowSpotifyModal] = useState(false);
-  const [playedSongIds, setPlayedSongIds] = useState([]);
   const [bgImportStatus, setBgImportStatus] = useState(null);
 
   // User profile & Modals
@@ -56,25 +56,16 @@ export default function App() {
   // Party mode state
   const [partyState, setPartyState] = useState(null);
 
-  // Puzzle gameplay state
-  const [puzzleData, setPuzzleData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [startTime, setStartTime] = useState(Date.now());
-
-  const [guesses, setGuesses] = useState([]);
-  const [isGameOver, setIsGameOver] = useState(false);
-  const [isSolved, setIsSolved] = useState(false);
-  const [targetSong, setTargetSong] = useState(null);
-  const [gameScore, setGameScore] = useState(0);
-
   const [showHelp, setShowHelp] = useState(false);
   const [showStats, setShowStats] = useState(false);
-  const [showResult, setShowResult] = useState(false);
   const [stats, setStats] = useState(getLocalStats());
-
   const [anonId, setAnonId] = useState(null);
-  useEffect(() => { getSession().then(session => setAnonId(session.anonId)).catch(err => { setError(err.message); setLoading(false); }); }, []);
+  const [sessionError, setSessionError] = useState(null);
+  const game = useGameRound({ apiBaseUrl: API_BASE_URL, mode: gameMode, anonId, playlistSongIds: spotifyPlaylist?.songIds, onCompleted: data => setStats(saveLocalStats(data.isSolved)) });
+  const { puzzleData, guesses, isGameOver, isSolved, targetSong, gameScore, showResult, setShowResult, handleMakeGuess, handleSkip, handleSelectStep, isSubmitting, submissionError, loadPuzzle: fetchPuzzle } = game;
+  const error = sessionError || game.error;
+  const loading = !sessionError && game.loading;
+  useEffect(() => { getSession().then(session => setAnonId(session.anonId)).catch(err => setSessionError(err.message)); }, []);
 
   // Global Audio Context unlock listener for page refresh
   useEffect(() => {
@@ -112,6 +103,7 @@ export default function App() {
           const data = await res.json();
           if (data.profile) {
             setUserProfile(data.profile);
+            localStorage.removeItem('song_guesser_user_pin');
             return;
           }
         }
@@ -167,104 +159,6 @@ export default function App() {
       return { error: 'Server connection error. Please try again.' };
     }
   };
-
-  // Load puzzle based on active mode
-  const fetchPuzzle = async (mode, customSpotifyIds = null, currentExcludes = null) => {
-    if (mode === 'party') return;
-    if (!currentExcludes) {
-      try { currentExcludes = JSON.parse(sessionStorage.getItem(`song_guesser_history_${mode}`) || '[]'); } catch { currentExcludes = []; }
-      if (!Array.isArray(currentExcludes)) currentExcludes = [];
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-      setStartTime(Date.now());
-
-      let endpoint = `/api/puzzle/today?anonId=${anonId}`;
-
-      if (mode === 'unlimited') {
-        const excludeParam = currentExcludes.length > 0 ? `?excludeIds=${currentExcludes.join(',')}` : '';
-        endpoint = `/api/puzzle/random${excludeParam}`;
-      } else if (mode === 'spotify') {
-        const songIds = customSpotifyIds || spotifyPlaylist?.songIds;
-        if (!songIds || !songIds.length) {
-          setShowSpotifyModal(true);
-          setLoading(false);
-          return;
-        }
-        const excludeParam = currentExcludes.length > 0 ? `&excludeIds=${currentExcludes.join(',')}` : '';
-        endpoint = `/api/puzzle/spotify?songIds=${songIds.join(',')}${excludeParam}`;
-      }
-
-      const res = await fetch(`${API_BASE_URL}${endpoint}`);
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || `HTTP error ${res.status}`);
-      }
-
-      const data = await res.json();
-      setPuzzleData(data);
-
-      if (data.targetSongId && mode !== 'daily') {
-        sessionStorage.setItem(`song_guesser_history_${mode}`, JSON.stringify(data.historyReset ? [data.targetSongId] : [...currentExcludes, data.targetSongId]));
-        if (data.historyReset) {
-          setPlayedSongIds([data.targetSongId]);
-        } else {
-          setPlayedSongIds((prev) => [...prev, data.targetSongId]);
-        }
-      }
-
-      if (mode === 'daily') {
-        const storageKey = `song_guesser_${data.puzzleDate}`;
-
-        if (data.userAttempt && data.userAttempt.guesses?.length) {
-          setGuesses(data.userAttempt.guesses);
-          setIsGameOver(data.userAttempt.isGameOver);
-          setIsSolved(data.userAttempt.isSolved);
-          setTargetSong(data.userAttempt.targetSong || null);
-          setGameScore(data.userAttempt.score || 0);
-          setShowResult(false);
-          localStorage.setItem(storageKey, JSON.stringify({
-            guesses: data.userAttempt.guesses,
-            isGameOver: data.userAttempt.isGameOver,
-            isSolved: data.userAttempt.isSolved,
-            targetSong: data.userAttempt.targetSong,
-            score: data.userAttempt.score || 0
-          }));
-        } else {
-          // Server has no recorded attempt for today (fresh day or admin reset)
-          // Clear stale local storage and reset game board fresh!
-          localStorage.removeItem(storageKey);
-          setGuesses([]);
-          setIsGameOver(false);
-          setIsSolved(false);
-          setTargetSong(null);
-          setGameScore(0);
-          setShowResult(false);
-        }
-      } else {
-        setGuesses([]);
-        setIsGameOver(false);
-        setIsSolved(false);
-        setTargetSong(null);
-        setGameScore(0);
-        setShowResult(false);
-      }
-    } catch (err) {
-      console.error(`Error loading ${mode} puzzle:`, err);
-      setError(err.message || 'Failed to connect to game server');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (anonId && gameMode !== 'party') {
-      setPlayedSongIds([]);
-      fetchPuzzle(gameMode);
-    }
-  }, [gameMode, anonId]);
 
   const handleToggleMode = (newMode) => {
     if (newMode === 'party') {
@@ -350,7 +244,6 @@ export default function App() {
   const handleSelectCached = (playlist) => {
     setSpotifyPlaylist(playlist);
     setGameMode('spotify');
-    setPlayedSongIds([]);
     if (gameMode === 'spotify') fetchPuzzle('spotify', playlist.songIds);
   };
 
@@ -423,8 +316,7 @@ export default function App() {
                 if (!hasLaunchedGame) {
                   hasLaunchedGame = true;
                   setGameMode('spotify');
-                  setPlayedSongIds([]);
-                  if (gameMode === 'spotify') fetchPuzzle('spotify', msg.songIds);
+                                if (gameMode === 'spotify') fetchPuzzle('spotify', msg.songIds);
                 }
               }
             } else if (msg.type === 'complete') {
@@ -455,184 +347,6 @@ export default function App() {
     } catch (err) {
       console.error('Import error:', err);
       setBgImportStatus(null);
-    }
-  };
-
-  // Save game state for daily mode
-  const saveDailyState = (newGuesses, gameOver, solved, song, score) => {
-    if (gameMode !== 'daily' || !puzzleData?.puzzleDate) return;
-    const storageKey = `song_guesser_${puzzleData.puzzleDate}`;
-    localStorage.setItem(storageKey, JSON.stringify({
-      guesses: newGuesses,
-      isGameOver: gameOver,
-      isSolved: solved,
-      targetSong: song,
-      score
-    }));
-  };
-
-  const handleMakeGuess = async (selectedSong) => {
-    if (!puzzleData || isGameOver) return;
-
-    try {
-      const timeTakenMs = Date.now() - startTime;
-      const bodyPayload = {
-        requestId: crypto.randomUUID(),
-        puzzleId: puzzleData.puzzleId,
-        anonId,
-        songId: selectedSong.id,
-        isSkip: false,
-        mode: gameMode,
-        targetSongId: puzzleData.targetSongId,
-        currentGuessesCount: guesses.length,
-        timeTakenMs
-      };
-
-      const res = await fetch(`${API_BASE_URL}/api/guess`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(bodyPayload)
-      });
-
-      if (!res.ok) throw new Error('Failed to submit guess');
-      const data = await res.json();
-
-      const newGuessObj = {
-        guessNumber: data.guessNumber,
-        isCorrect: data.isCorrect,
-        isSkip: false,
-        guessedSong: selectedSong
-      };
-
-      const nextGuesses = [...guesses, newGuessObj];
-      setGuesses(nextGuesses);
-
-      if (data.isGameOver) {
-        setIsGameOver(true);
-        setIsSolved(data.isCorrect);
-        setTargetSong(data.targetSong);
-        setGameScore(data.score || 0);
-        const updatedStats = saveLocalStats(data.isCorrect);
-        setStats(updatedStats);
-        saveDailyState(nextGuesses, true, data.isCorrect, data.targetSong, data.score || 0);
-        setTimeout(() => setShowResult(true), 600);
-      } else {
-        saveDailyState(nextGuesses, false, false, null, 0);
-      }
-    } catch (err) {
-      console.error('Error submitting guess:', err);
-    }
-  };
-
-  const handleSkip = async () => {
-    if (!puzzleData || isGameOver) return;
-
-    try {
-      const timeTakenMs = Date.now() - startTime;
-      const bodyPayload = {
-        requestId: crypto.randomUUID(),
-        puzzleId: puzzleData.puzzleId,
-        anonId,
-        songId: null,
-        isSkip: true,
-        mode: gameMode,
-        targetSongId: puzzleData.targetSongId,
-        currentGuessesCount: guesses.length,
-        timeTakenMs
-      };
-
-      const res = await fetch(`${API_BASE_URL}/api/guess`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(bodyPayload)
-      });
-
-      if (!res.ok) throw new Error('Failed to skip');
-      const data = await res.json();
-
-      const newGuessObj = {
-        guessNumber: data.guessNumber,
-        isCorrect: false,
-        isSkip: true,
-        guessedSong: null
-      };
-
-      const nextGuesses = [...guesses, newGuessObj];
-      setGuesses(nextGuesses);
-
-      if (data.isGameOver) {
-        setIsGameOver(true);
-        setIsSolved(false);
-        setTargetSong(data.targetSong);
-        setGameScore(data.score || 0);
-        const updatedStats = saveLocalStats(false);
-        setStats(updatedStats);
-        saveDailyState(nextGuesses, true, false, data.targetSong, data.score || 0);
-        setTimeout(() => setShowResult(true), 600);
-      } else {
-        saveDailyState(nextGuesses, false, false, null, 0);
-      }
-    } catch (err) {
-      console.error('Error submitting skip:', err);
-    }
-  };
-
-  const handleSelectStep = async (targetIndex) => {
-    if (!puzzleData || isGameOver || targetIndex <= guesses.length) return;
-
-    try {
-      const timeTakenMs = Date.now() - startTime;
-      const currentCount = guesses.length;
-      const skipCount = targetIndex - currentCount;
-
-      const bodyPayload = {
-        requestId: crypto.randomUUID(),
-        puzzleId: puzzleData.puzzleId,
-        anonId,
-        songId: null,
-        isSkip: true,
-        skipCount,
-        mode: gameMode,
-        targetSongId: puzzleData.targetSongId,
-        currentGuessesCount: currentCount,
-        timeTakenMs
-      };
-
-      const res = await fetch(`${API_BASE_URL}/api/guess`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(bodyPayload)
-      });
-
-      if (!res.ok) return;
-      const data = await res.json();
-
-      const newGuesses = [...guesses];
-      for (let i = 0; i < skipCount; i++) {
-        newGuesses.push({
-          guessNumber: currentCount + i + 1,
-          isCorrect: false,
-          isSkip: true,
-          guessedSong: null
-        });
-      }
-
-      setGuesses(newGuesses);
-
-      if (data.isGameOver) {
-        setIsGameOver(true);
-        setIsSolved(false);
-        setTargetSong(data.targetSong);
-        setGameScore(data.score || 0);
-        const updatedStats = saveLocalStats(false);
-        setStats(updatedStats);
-        saveDailyState(newGuesses, true, false, data.targetSong, data.score || 0);
-        setTimeout(() => setShowResult(true), 600);
-      } else {
-        saveDailyState(newGuesses, false, false, null, 0);
-      }
-    } catch (err) {
-      console.error('Error skipping to target step:', err);
     }
   };
 
@@ -705,13 +419,14 @@ export default function App() {
             currentIndex={guesses.length}
             isGameOver={isGameOver}
             onSelectStep={handleSelectStep}
+            disabled={isSubmitting}
           />
 
           {!isGameOver ? (
             <SearchAutocomplete
               onMakeGuess={handleMakeGuess}
               onSkip={handleSkip}
-              disabled={isGameOver}
+              disabled={isGameOver || isSubmitting}
               apiBaseUrl={API_BASE_URL}
             />
           ) : (
@@ -738,11 +453,13 @@ export default function App() {
               </button>
             </div>
           )}
+          {submissionError && <p className="audio-error" role="alert">{submissionError}</p>}
           <GuessGrid
             guesses={guesses}
             maxGuesses={puzzleData?.maxGuesses || 6}
             currentIndex={guesses.length}
             onSelectStep={handleSelectStep}
+            disabled={isSubmitting}
           />
         </main>
       )}

@@ -6,6 +6,7 @@ export default function GuessGrid({
   maxGuesses = 6,
   currentIndex,
   onSelectStep,
+  disabled = false,
 }) {
   const finished =
     guesses.some((g) => g.isCorrect) || guesses.length >= maxGuesses;
@@ -36,7 +37,7 @@ export default function GuessGrid({
               key={i}
               className={`attempt-slot ${g ? (g.isCorrect ? "correct" : g.isSkip ? "skipped" : "wrong") : i === currentIndex && !finished ? "current" : ""}`}
               onClick={() => future && onSelectStep?.(i)}
-              disabled={!future}
+              disabled={disabled || !future}
               title={
                 future
                   ? `Go to attempt ${i + 1} — uses ${i - currentIndex} ${i - currentIndex === 1 ? "attempt" : "attempts"}`

@@ -58,17 +58,17 @@ export default function SearchAutocomplete({ onMakeGuess, onSkip, disabled, apiB
     setIsOpen(false);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e?.preventDefault();
     if (!selectedSong || disabled) return;
-    onMakeGuess(selectedSong);
+    if (!await onMakeGuess(selectedSong)) return;
     setQuery('');
     setSelectedSong(null);
   };
 
-  const handleSkipClick = () => {
+  const handleSkipClick = async () => {
     if (disabled) return;
-    onSkip();
+    if (!await onSkip()) return;
     setQuery('');
     setSelectedSong(null);
   };

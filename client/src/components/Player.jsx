@@ -20,6 +20,7 @@ export default function Player({
   onSelectStep,
   songId,
   apiBaseUrl,
+  disabled = false,
 }) {
   const activeBaseUrl = apiBaseUrl || DEFAULT_API_BASE_URL;
   const audioRef = useRef(null);
@@ -217,7 +218,7 @@ export default function Player({
               !isGameOver &&
               i === Math.min(currentIndex, guessDurationsMs.length - 1)
             }
-            disabled={isGameOver || i <= currentIndex}
+            disabled={disabled || isGameOver || i <= currentIndex}
             onClick={() => handleTickClick(i)}
             title={
               !isGameOver && i > currentIndex
