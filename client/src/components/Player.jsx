@@ -8,6 +8,7 @@ import {
   VolumeX,
   AlertCircle,
   Lock,
+  Loader2,
 } from "lucide-react";
 
 const DEFAULT_API_BASE_URL =
@@ -22,6 +23,8 @@ export default function Player({
   songId,
   apiBaseUrl,
   disabled = false,
+  onUnavailable,
+  autoPlay = false,
 }) {
   const activeBaseUrl = apiBaseUrl || DEFAULT_API_BASE_URL;
   // Maximum duration of the preview audio (standard 30s)
@@ -39,7 +42,7 @@ export default function Player({
       : `${activeBaseUrl}/api/audio/proxy?url=${encodeURIComponent(previewUrl)}${songId ? `&songId=${songId}` : ""}`
     : "";
 
-  const { audioRef, isPlaying, currentTime, audioError, volume, isMuted, togglePlay, handleVolumeChange, toggleMute } = useAudioPlayback({ source: activeAudioSrc, limitMs: activeMaxMs, resetKey: currentIndex });
+  const { audioRef, isPlaying, currentTime, audioError, isBuffering, isRecovering, volume, isMuted, togglePlay, handleVolumeChange, toggleMute } = useAudioPlayback({ source: activeAudioSrc, limitMs: activeMaxMs, resetKey: currentIndex, onUnavailable, autoPlay });
 
   const handleTickClick = (stepIndex) => {
     if (stepIndex > currentIndex && !isGameOver && onSelectStep) {
@@ -130,9 +133,10 @@ export default function Player({
           className="play-btn"
           onClick={togglePlay}
           disabled={!previewUrl}
+          aria-busy={isBuffering || isRecovering}
           aria-label={isPlaying ? "Pause snippet" : "Play snippet"}
         >
-          {isPlaying ? (
+          {isBuffering || isRecovering ? <Loader2 className="spin" size={26} /> : isPlaying ? (
             <Pause size={27} />
           ) : (
             <Play size={27} fill="currentColor" />
@@ -171,10 +175,11 @@ export default function Player({
           Need more? Unlock a longer clip using an attempt.
         </p>
       )}
+      {(isBuffering || isRecovering) && <p className="duration-hint" role="status">{isRecovering ? 'Refreshing your preview…' : 'Getting your snippet ready…'}</p>}
       {audioError && (
         <p className="audio-error" role="alert">
           <AlertCircle size={16} />
-          Unable to play audio. Press play to retry.
+          {audioError === 'offline' ? 'You’re offline. Reconnect to keep listening.' : 'Preview recovery paused. Press Play to try again.'}
         </p>
       )}
     </section>

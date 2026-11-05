@@ -51,3 +51,19 @@ test('duplicate clicks send one guess and network retries reuse the request ID',
   assert.equal(hook.isGameOver, true);
   await act(async () => renderer.unmount());
 });
+
+test('unavailable Unlimited songs are replaced without guesses and recovery is bounded', async () => {
+  let loads = 0, guesses = 0, renderer;
+  window.fetch = async url => {
+    if (url.endsWith('/guess')) guesses++;
+    return Response.json(puzzle(`replacement-${++loads}`));
+  };
+  await act(async () => { renderer = create(React.createElement(Harness, { mode: 'unlimited' })); });
+  for (let i = 0; i < 3; i++) await act(async () => { assert.equal(await hook.handleAudioUnavailable({ resume: true }), true); });
+  await act(async () => { assert.equal(await hook.handleAudioUnavailable({ resume: true }), false); });
+  assert.equal(loads, 4);
+  assert.equal(guesses, 0);
+  assert.deepEqual(hook.guesses, []);
+  assert.equal(hook.autoPlayAudio, true);
+  await act(async () => renderer.unmount());
+});

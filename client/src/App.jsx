@@ -40,7 +40,7 @@ export default function App() {
   const [anonId, setAnonId] = useState(null);
   const [sessionError, setSessionError] = useState(null);
   const game = useGameRound({ apiBaseUrl: API_BASE_URL, mode: gameMode, anonId, playlistSongIds: spotifyPlaylist?.songIds });
-  const { puzzleData, guesses, isGameOver, isSolved, targetSong, gameScore, showResult, setShowResult, handleMakeGuess, handleSkip, handleSelectStep, isSubmitting, submissionError, loadPuzzle: fetchPuzzle } = game;
+  const { puzzleData, guesses, isGameOver, isSolved, targetSong, gameScore, showResult, setShowResult, handleMakeGuess, handleSkip, handleSelectStep, isSubmitting, submissionError, handleAudioUnavailable, autoPlayAudio, loadPuzzle: fetchPuzzle } = game;
   const error = sessionError || game.error;
   const loading = !sessionError && game.loading;
   useEffect(() => { getSession().then(session => setAnonId(session.anonId)).catch(err => setSessionError(err.message)); }, []);
@@ -272,6 +272,8 @@ export default function App() {
         <main className="game-main" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <Player
             previewUrl={puzzleData?.previewUrl}
+            onUnavailable={handleAudioUnavailable}
+            autoPlay={autoPlayAudio}
             songId={puzzleData?.targetSongId}
             apiBaseUrl={API_BASE_URL}
             guessDurationsMs={puzzleData?.guessDurationsMs}

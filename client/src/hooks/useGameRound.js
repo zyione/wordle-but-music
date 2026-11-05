@@ -10,10 +10,12 @@ export default function useGameRound(options) {
   const mutation = useRef(null);
   const retry = useRef(null);
   const completed = useRef(new Set());
+  const audioReplacements = useRef(0);
   const [state, setState] = useState({ ...empty, puzzleData: null, loading: true, error: null, submissionError: null, isSubmitting: false, showResult: false });
   const current = useRef(state);
   current.current = state;
-  const loadPuzzle = useCallback(async (modeOverride, customIds) => {
+  const loadPuzzle = useCallback(async (modeOverride, customIds, loadOptions = {}) => {
+    if (!loadOptions.recovery) audioReplacements.current = 0;
     const settings = latest.current;
     const mode = modeOverride || settings.mode;
     activeLoad.current?.abort();
@@ -41,7 +43,7 @@ export default function useGameRound(options) {
       if (data.targetSongId && ['unlimited', 'spotify'].includes(mode)) {
         try { sessionStorage.setItem(`song_guesser_history_${mode}`, JSON.stringify(data.historyReset ? [data.targetSongId] : [...history, data.targetSongId])); } catch { /* Playing remains available without browser storage. */ }
       }
-      setState({ ...empty, ...(data.userAttempt || {}), puzzleData: data, loading: false, error: null, submissionError: null, isSubmitting: false, showResult: false });
+      setState({ ...empty, ...(data.userAttempt || {}), puzzleData: data, autoPlayAudio: Boolean(loadOptions.resume), loading: false, error: null, submissionError: null, isSubmitting: false, showResult: false });
     } catch (error) {
       if (!controller.signal.aborted && version === generation.current) setState(s => ({ ...s, loading: false, error: error.message }));
     }
@@ -81,7 +83,14 @@ export default function useGameRound(options) {
       if (mutation.current === identity) { mutation.current = null; setState(s => ({ ...s, isSubmitting: false })); }
     }
   }, []);
-  return { ...state, gameScore: state.score, loadPuzzle,
+  const handleAudioUnavailable = useCallback(async ({ resume } = {}) => {
+    const mode = latest.current.mode;
+    if (!['unlimited', 'spotify'].includes(mode) || current.current.isGameOver || audioReplacements.current >= 3) return false;
+    audioReplacements.current++;
+    await loadPuzzle(mode, null, { recovery: true, resume });
+    return true;
+  }, [loadPuzzle]);
+  return { ...state, handleAudioUnavailable, gameScore: state.score, loadPuzzle,
     setShowResult: value => setState(s => ({ ...s, showResult: value })),
     handleMakeGuess: song => submit(song), handleSkip: () => submit(null),
     handleSelectStep: index => index > current.current.guesses.length ? submit(null, index - current.current.guesses.length) : Promise.resolve(false),
