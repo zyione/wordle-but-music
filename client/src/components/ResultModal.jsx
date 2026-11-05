@@ -1,5 +1,6 @@
+import useAudioPlayback from '../hooks/useAudioPlayback.js';
 import useDialog from '../hooks/useDialog.js';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { X, Share2, ExternalLink, Trophy, Music, Shuffle, Play, Pause, Volume2, Volume1, VolumeX } from 'lucide-react';
 
 const DEFAULT_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
@@ -7,87 +8,14 @@ const DEFAULT_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localh
 export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate, gameMode, gameScore = 0, onPlayNextUnlimited, onClose, apiBaseUrl }) {
   const dialogRef = useDialog(onClose);
   const [copied, setCopied] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const audioRef = useRef(null);
 
   const activeBaseUrl = apiBaseUrl || DEFAULT_API_BASE_URL;
   const audioSrc = targetSong?.preview_url
     ? `${activeBaseUrl}/api/audio/proxy?url=${encodeURIComponent(targetSong.preview_url)}${targetSong.id ? `&songId=${targetSong.id}` : ''}`
     : '';
 
-  // Volume & Mute State aligned with main player (persisted in LocalStorage)
-  const [volume, setVolume] = useState(() => {
-    const saved = localStorage.getItem('song_guesser_volume');
-    return saved !== null ? parseFloat(saved) : 0.8;
-  });
-  const [isMuted, setIsMuted] = useState(false);
-
-  // Update audio volume whenever volume or mute state changes
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = isMuted ? 0 : volume;
-    }
-  }, [volume, isMuted]);
-
-  useEffect(() => {
-    // Auto-play preview audio when modal opens, using saved volume setting
-    if (audioRef.current && targetSong?.preview_url) {
-      audioRef.current.volume = isMuted ? 0 : volume;
-      audioRef.current.play().then(() => {
-        setIsPlaying(true);
-      }).catch((err) => {
-        console.warn('Auto-play blocked by browser policy:', err);
-        setIsPlaying(false);
-      });
-    }
-
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
-    };
-  }, [targetSong?.preview_url]);
-
+  const { audioRef, isPlaying, audioError, volume, isMuted, togglePlay: toggleAudio, handleVolumeChange, toggleMute } = useAudioPlayback({ source: audioSrc, autoPlay: true });
   if (!targetSong) return null;
-
-  const toggleAudio = () => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    if (isPlaying) {
-      audio.pause();
-      setIsPlaying(false);
-    } else {
-      audio.volume = isMuted ? 0 : volume;
-      if (audio.error) {
-        audio.src = `${audioSrc}&refresh=1&retry=${Date.now()}`;
-        audio.load();
-      }
-      audio.play().then(() => {
-        setIsPlaying(true);
-      }).catch(err => console.error('Audio play error:', err));
-    }
-  };
-
-  const handleVolumeChange = (e) => {
-    const newVol = parseFloat(e.target.value);
-    setVolume(newVol);
-    setIsMuted(newVol === 0);
-    localStorage.setItem('song_guesser_volume', String(newVol));
-  };
-
-  const toggleMute = () => {
-    if (isMuted) {
-      setIsMuted(false);
-      if (volume === 0) {
-        setVolume(0.8);
-        localStorage.setItem('song_guesser_volume', '0.8');
-      }
-    } else {
-      setIsMuted(true);
-    }
-  };
 
   // Generate Emoji Grid
   const generateShareText = () => {
@@ -119,7 +47,7 @@ export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate,
 
   return (
     <div className="modal-overlay">
-      <audio ref={audioRef} src={audioSrc} preload="auto" onEnded={() => setIsPlaying(false)} />
+      <audio ref={audioRef} src={audioSrc} preload="auto" />
 
       <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Result" className="modal-card">
         <div className="modal-header">
@@ -237,6 +165,7 @@ export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate,
             </div>
           </div>
 
+          {audioError && <p className="audio-error" role="status">Preview unavailable. Press play to retry.</p>}
           <div className="result-summary"><div><strong>{isSolved ? guesses.length : 'X'} / 6</strong><span>ATTEMPTS</span></div><div><strong>{gameScore.toLocaleString()}<small> pts</small></strong><span>SCORE</span></div></div>
           <div className="share-grid-box">
             {guesses.map((g, i) => (

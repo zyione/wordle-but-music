@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
+import useAudioPlayback from '../hooks/useAudioPlayback.js';
+import React from "react";
 import {
   Play,
   Pause,
@@ -23,19 +24,6 @@ export default function Player({
   disabled = false,
 }) {
   const activeBaseUrl = apiBaseUrl || DEFAULT_API_BASE_URL;
-  const audioRef = useRef(null);
-  const timerRef = useRef(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [audioError, setAudioError] = useState(false);
-
-  // Volume & Mute State (persisted in LocalStorage)
-  const [volume, setVolume] = useState(() => {
-    const saved = localStorage.getItem("song_guesser_volume");
-    return saved !== null ? parseFloat(saved) : 0.8;
-  });
-  const [isMuted, setIsMuted] = useState(false);
-
   // Maximum duration of the preview audio (standard 30s)
   const maxTotalMs = 30000;
 
@@ -51,118 +39,11 @@ export default function Player({
       : `${activeBaseUrl}/api/audio/proxy?url=${encodeURIComponent(previewUrl)}${songId ? `&songId=${songId}` : ""}`
     : "";
 
-  // Update audio element volume whenever state changes
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = isMuted ? 0 : volume;
-    }
-  }, [volume, isMuted]);
-
-  useEffect(() => () => clearTimeout(timerRef.current), []);
-
-  useEffect(() => {
-    clearTimeout(timerRef.current);
-    // Reset player when snippet duration, index, or previewUrl changes
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      setIsPlaying(false);
-      setCurrentTime(0);
-      setAudioError(false);
-    }
-  }, [currentIndex, isGameOver, previewUrl]);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const handleTimeUpdate = () => {
-      setCurrentTime(audio.currentTime * 1000);
-      if (audio.currentTime * 1000 >= activeMaxMs) {
-        audio.pause();
-        audio.currentTime = 0;
-        setIsPlaying(false);
-        if (timerRef.current) clearTimeout(timerRef.current);
-      }
-    };
-
-    const handleEnded = () => {
-      setIsPlaying(false);
-      setCurrentTime(0);
-    };
-
-    audio.addEventListener("timeupdate", handleTimeUpdate);
-    audio.addEventListener("ended", handleEnded);
-
-    return () => {
-      audio.removeEventListener("timeupdate", handleTimeUpdate);
-      audio.removeEventListener("ended", handleEnded);
-    };
-  }, [activeMaxMs]);
-
-  const attemptPlay = async (audio, durationMs) => {
-    try {
-      // A failed media resource must be reloaded before play() can succeed.
-      if (audio.error || audioError) {
-        audio.src = `${activeAudioSrc}${activeAudioSrc.includes('?') ? '&' : '?'}refresh=1&retry=${Date.now()}`;
-        audio.load();
-      }
-      await audio.play();
-      setIsPlaying(true);
-      setAudioError(false);
-      clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => {
-        audio.pause();
-        audio.currentTime = 0;
-        setCurrentTime(0);
-        setIsPlaying(false);
-      }, Math.max(0, durationMs - audio.currentTime * 1000));
-    } catch (err) {
-      console.warn('Audio playback failed:', err.name);
-      setIsPlaying(false);
-      setAudioError(true);
-    }
-  };
-
-  const togglePlay = () => {
-    const audio = audioRef.current;
-    if (!audio || !previewUrl) return;
-
-    if (isPlaying) {
-      audio.pause();
-      setIsPlaying(false);
-      if (timerRef.current) clearTimeout(timerRef.current);
-    } else {
-      audio.volume = isMuted ? 0 : volume;
-      if (audio.currentTime * 1000 >= activeMaxMs || audio.currentTime === 0) {
-        audio.currentTime = 0;
-      }
-      attemptPlay(audio, activeMaxMs);
-    }
-  };
+  const { audioRef, isPlaying, currentTime, audioError, volume, isMuted, togglePlay, handleVolumeChange, toggleMute } = useAudioPlayback({ source: activeAudioSrc, limitMs: activeMaxMs, resetKey: currentIndex });
 
   const handleTickClick = (stepIndex) => {
     if (stepIndex > currentIndex && !isGameOver && onSelectStep) {
       onSelectStep(stepIndex);
-    }
-  };
-
-  const handleVolumeChange = (e) => {
-    const newVol = parseFloat(e.target.value);
-    setVolume(newVol);
-    setIsMuted(newVol === 0);
-    localStorage.setItem("song_guesser_volume", String(newVol));
-  };
-
-  const toggleMute = () => {
-    if (isMuted) {
-      setIsMuted(false);
-      if (volume === 0) {
-        setVolume(0.8);
-        localStorage.setItem("song_guesser_volume", "0.8");
-      }
-    } else {
-      setIsMuted(true);
     }
   };
 

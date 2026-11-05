@@ -41,6 +41,7 @@ export default function AudioUnlockBanner({ onUnlocked }) {
         source.buffer = buffer;
         source.connect(ctx.destination);
         source.start(0);
+        source.onended = () => ctx.close();
         await ctx.resume();
       }
 

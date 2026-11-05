@@ -45,32 +45,6 @@ export default function App() {
   const loading = !sessionError && game.loading;
   useEffect(() => { getSession().then(session => setAnonId(session.anonId)).catch(err => setSessionError(err.message)); }, []);
 
-  // Global Audio Context unlock listener for page refresh
-  useEffect(() => {
-    const unlockAudioContext = () => {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (AudioContext) {
-        try {
-          const ctx = new AudioContext();
-          ctx.resume().catch(() => {});
-        } catch {}
-      }
-      const silentAudio = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=');
-      silentAudio.volume = 0;
-      silentAudio.play().catch(() => {});
-    };
-
-    window.addEventListener('click', unlockAudioContext, { once: true });
-    window.addEventListener('keydown', unlockAudioContext, { once: true });
-    window.addEventListener('touchstart', unlockAudioContext, { once: true });
-
-    return () => {
-      window.removeEventListener('click', unlockAudioContext);
-      window.removeEventListener('keydown', unlockAudioContext);
-      window.removeEventListener('touchstart', unlockAudioContext);
-    };
-  }, []);
-
   // Load User Profile on mount with persistent account memory
   useEffect(() => {
     if (!anonId) return;
