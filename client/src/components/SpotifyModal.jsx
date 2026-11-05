@@ -7,17 +7,22 @@ export default function SpotifyModal({ onSelectCached, onStartImport, onClose })
   const dialogRef = useDialog(onClose);
   const [playlistUrl, setPlaylistUrl] = useState('');
   const [error, setError] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   const [cachedPlaylists, setCachedPlaylists] = useState(getCachedPlaylists());
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e?.preventDefault();
-    if (!playlistUrl.trim()) return;
+    if (!playlistUrl.trim() || submitting) return;
     setError(null);
     if (!/playlist\/[A-Za-z0-9]+|^[A-Za-z0-9]+$/.test(playlistUrl.trim())) { setError('Enter a public Spotify playlist link.'); return; }
 
     if (onStartImport) {
-      onStartImport(playlistUrl.trim());
-      onClose();
+      setSubmitting(true);
+      try {
+        const result = await onStartImport(playlistUrl.trim());
+        if (result?.error) setError(result.error);
+        else onClose();
+      } finally { setSubmitting(false); }
     }
   };
 
@@ -47,13 +52,14 @@ export default function SpotifyModal({ onSelectCached, onStartImport, onClose })
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-            Paste any public Spotify Playlist link to play songs chosen exclusively from your playlist!
+            Paste a public Spotify playlist. Play as soon as the first songs are ready while the rest import in the background.
           </p>
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <input
               type="text"
               className="search-input"
+              aria-label="Public Spotify playlist URL"
               placeholder="e.g. https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M"
               value={playlistUrl}
               onChange={(e) => setPlaylistUrl(e.target.value)}
@@ -61,7 +67,7 @@ export default function SpotifyModal({ onSelectCached, onStartImport, onClose })
 
             <button
               type="submit"
-              className="btn-submit"
+              className="btn-submit spotify-import-button"
               style={{
                 background: '#1db954',
                 color: '#ffffff',
@@ -71,9 +77,10 @@ export default function SpotifyModal({ onSelectCached, onStartImport, onClose })
                 height: 46,
                 boxShadow: '0 4px 14px rgba(29, 185, 84, 0.4)'
               }}
-              disabled={!playlistUrl.trim()}
+              disabled={!playlistUrl.trim() || submitting}
+              aria-busy={submitting}
             >
-              Import & Start Playlist
+              {submitting ? 'Starting import…' : 'Import & Start Playlist'}
             </button>
           </form>
 

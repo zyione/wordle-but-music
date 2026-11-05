@@ -132,3 +132,17 @@ CREATE TABLE IF NOT EXISTS game_requests (
     response_json TEXT NOT NULL,
     PRIMARY KEY(game_id, request_id)
 );
+
+CREATE TABLE IF NOT EXISTS playlist_imports (
+    id TEXT PRIMARY KEY,
+    owner_id TEXT NOT NULL,
+    input_url TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'queued',
+    playlist_id TEXT,
+    playlist_name TEXT,
+    tracks_json TEXT NOT NULL DEFAULT '[]',
+    processed_json TEXT NOT NULL DEFAULT '[]',
+    song_ids_json TEXT NOT NULL DEFAULT '[]',
+    error TEXT,
+    created_at INTEGER NOT NULL
+);

@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import sessionRoutes from './routes/session.js';
 import { requireSession } from './services/auth.js';
+import { resumeImports } from './services/playlistImports.js';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -33,7 +34,8 @@ const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
 
 // Auto run migration, auto-seed if empty, & today's scheduler on server start
 migrate();
-seedIfEmpty();
+await seedIfEmpty();
+resumeImports();
 
 // Normalize and sanitize allowed origins to prevent trailing slash CORS mismatches
 const cleanOriginStr = (str) => (str ? str.trim().replace(/\/+$/, '') : '');

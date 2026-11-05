@@ -8,6 +8,7 @@ export async function parseSpotifyPlaylist(playlistUrlOrId) {
   }
 
   // Extract playlist ID from standard URL, mobile share link, or raw ID
+  playlistUrlOrId = String(playlistUrlOrId).trim();
   const match = playlistUrlOrId.match(/playlist\/([a-zA-Z0-9]+)/) || playlistUrlOrId.match(/^([a-zA-Z0-9]+)$/);
   const playlistId = match ? match[1] : null;
 
@@ -18,6 +19,7 @@ export async function parseSpotifyPlaylist(playlistUrlOrId) {
   const embedUrl = `https://open.spotify.com/embed/playlist/${playlistId}`;
 
   const res = await fetch(embedUrl, {
+    signal: AbortSignal.timeout(10000),
     headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     }
@@ -47,8 +49,8 @@ export async function parseSpotifyPlaylist(playlistUrlOrId) {
 
   const songs = trackList.map(t => {
     // Clean up artist subtitle string (removing non-breaking spaces if any)
-    const rawArtist = t.subtitle || (t.artists && t.artists[0] ? t.artists[0].name : '');
-    const artist = rawArtist.replace(/\u00a0/g, ' ').split(',')[0].trim(); // take primary artist
+    const rawArtist = t.artists?.[0]?.name || t.subtitle || '';
+    const artist = rawArtist.replace(/\u00a0/g, ' ').trim();
     return {
       title: (t.title || t.name || '').trim(),
       artist

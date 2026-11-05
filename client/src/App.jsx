@@ -324,41 +324,11 @@ export default function App() {
       )}
 
       {playlistImport.error && <p className="audio-error" role="alert">{playlistImport.error}</p>}
-      {/* NON-INTRUSIVE BACKGROUND IMPORT STATUS BADGE */}
-      {bgImportStatus && (
-        <div style={{
-          position: 'fixed',
-          bottom: 20,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          background: bgImportStatus.isComplete ? 'rgba(16, 185, 129, 0.95)' : 'rgba(18, 24, 38, 0.92)',
-          border: '1px solid rgba(29, 185, 84, 0.4)',
-          color: '#fff',
-          padding: '8px 18px',
-          borderRadius: 30,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          fontSize: '0.82rem',
-          fontWeight: 600,
-          boxShadow: '0 8px 30px rgba(0,0,0,0.6)',
-          backdropFilter: 'blur(10px)',
-          zIndex: 1500,
-          animation: 'toastFade 0.25s ease-out'
-        }}>
-          {bgImportStatus.isComplete ? (
-            <>
-              <CheckCircle2 size={16} color="#fff" />
-              <span>Playlist Ready ({bgImportStatus.readyCount} playable songs)</span>
-            </>
-          ) : (
-            <>
-              <Loader2 size={15} color="#1db954" style={{ animation: 'spin 1.2s linear infinite' }} />
-              <span>Importing Spotify Playlist (Track {bgImportStatus.current} of {bgImportStatus.total}...)</span>
-            </>
-          )}
-        </div>
-      )}
+      {bgImportStatus && <aside className="import-status" role="status">
+        {bgImportStatus.isComplete ? <CheckCircle2 size={18} /> : <Loader2 size={18} className="spin" />}
+        <div><strong>{bgImportStatus.isComplete ? 'Playlist ready' : bgImportStatus.total ? 'Importing in the background' : 'Reading your playlist…'}</strong><p>{bgImportStatus.readyCount || 0} songs ready{bgImportStatus.total ? ` · ${bgImportStatus.current} of ${bgImportStatus.total} checked` : ''}</p></div>
+        {bgImportStatus.isImporting && bgImportStatus.total > 0 && <progress value={bgImportStatus.current} max={bgImportStatus.total} aria-label="Playlist import progress" />}
+      </aside>}
 
       <AudioUnlockBanner />
 
