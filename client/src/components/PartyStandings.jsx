@@ -1,12 +1,10 @@
 import usePartyPolling from '../hooks/usePartyPolling.js';
-import { apiFetch as fetch } from '../lib/api.js';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Trophy, Award, Medal, Share2, LogOut, Check, RefreshCw } from 'lucide-react';
 
 export default function PartyStandings({ partyState, anonId, apiBaseUrl = '', onStateUpdate, onLeaveParty }) {
   const [copied, setCopied] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [lastRefreshedText, setLastRefreshedText] = useState('Just now');
 
   const standings = partyState?.standings || [];
   const totalRounds = partyState?.numRounds || 5;
@@ -20,7 +18,7 @@ export default function PartyStandings({ partyState, anonId, apiBaseUrl = '', on
   const { refresh, error: pollError } = usePartyPolling({ code: partyState?.code, apiBaseUrl, onStateUpdate, enabled: hasUnfinishedPlayers });
   const handleRefreshStandings = async () => {
     setRefreshing(true);
-    try { await refresh(); setLastRefreshedText('Just now'); } finally { setRefreshing(false); }
+    try { await refresh(); } finally { setRefreshing(false); }
   };
 
   const handleCopyShare = () => {

@@ -1,6 +1,5 @@
 import usePartyPolling from '../hooks/usePartyPolling.js';
-import { apiFetch as fetch } from '../lib/api.js';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Copy, Check, Users, Play, Crown, Loader2, LogOut } from 'lucide-react';
 
 export default function PartyLobby({ partyState, anonId, apiBaseUrl, onStartGame, onLeaveParty, onStateUpdate }) {

@@ -33,6 +33,7 @@ export default function useAudioPlayback({ source, limitMs = 30000, autoPlay = f
     finally { if (active === version.current) starting.current = false; }
   }, [source, limitMs, stop]);
   const togglePlay = () => { if (playing.current || starting.current) stop(); else play(); };
+  const invalidate = useCallback(() => { version.current++; }, []);
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -42,8 +43,8 @@ export default function useAudioPlayback({ source, limitMs = 30000, autoPlay = f
     const failed = () => { stop(); setAudioError(true); };
     audio.addEventListener('timeupdate', update); audio.addEventListener('ended', ended); audio.addEventListener('error', failed);
     if (autoPlay) play();
-    return () => { version.current++; starting.current = false; playing.current = false; clearTimeout(timer.current); audio.pause(); audio.removeEventListener('timeupdate', update); audio.removeEventListener('ended', ended); audio.removeEventListener('error', failed); };
-  }, [source, limitMs, resetKey, autoPlay, play, stop]);
+    return () => { invalidate(); starting.current = false; playing.current = false; clearTimeout(timer.current); audio.pause(); audio.removeEventListener('timeupdate', update); audio.removeEventListener('ended', ended); audio.removeEventListener('error', failed); };
+  }, [source, limitMs, resetKey, autoPlay, play, stop, invalidate]);
   useEffect(() => { if (audioRef.current) audioRef.current.volume = isMuted ? 0 : volume; }, [volume, isMuted, source]);
   useEffect(() => {
     const sync = () => setVolume(readVolume());

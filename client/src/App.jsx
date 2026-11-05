@@ -360,7 +360,7 @@ export default function App() {
         </div>
       )}
 
-      <AudioUnlockBanner onUnlocked={() => {}} />
+      <AudioUnlockBanner />
 
       {/* MODALS */}
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}

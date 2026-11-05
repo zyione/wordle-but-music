@@ -1,6 +1,6 @@
 import useGameRound from '../hooks/useGameRound.js';
 import { apiFetch as fetch } from '../lib/api.js';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import GuessGrid from './GuessGrid.jsx';
 import Player from './Player.jsx';
 import SearchAutocomplete from './SearchAutocomplete.jsx';

@@ -9,7 +9,7 @@ export default function PartyModal({ onCreateParty, onJoinParty, onClose }) {
 
   // Create form state
   const [numRounds, setNumRounds] = useState(5);
-  const [maxPlayers, setMaxPlayers] = useState(10);
+  const [maxPlayers] = useState(10);
   const [songSource, setSongSource] = useState('random'); // 'random' | 'spotify'
   const [playlistUrl, setPlaylistUrl] = useState('');
   const [loading, setLoading] = useState(false);

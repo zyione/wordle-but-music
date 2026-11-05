@@ -46,10 +46,11 @@ export default function useGameRound(options) {
       if (!controller.signal.aborted && version === generation.current) setState(s => ({ ...s, loading: false, error: error.message }));
     }
   }, []);
+  const invalidate = useCallback(() => { generation.current++; }, []);
   useEffect(() => {
     loadPuzzle(options.mode);
-    return () => { activeLoad.current?.abort(); generation.current++; };
-  }, [options.mode, options.anonId, options.roundEndpoint, loadPuzzle]);
+    return () => { activeLoad.current?.abort(); invalidate(); };
+  }, [options.mode, options.anonId, options.roundEndpoint, loadPuzzle, invalidate]);
 
   const submit = useCallback(async (song, skips = 1) => {
     const game = current.current;

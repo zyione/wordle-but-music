@@ -27,7 +27,7 @@ export default function AudioUnlockBanner({ onUnlocked }) {
       // Already granted before — silently try to unlock in background
       onUnlocked?.();
     }
-  }, []);
+  }, [onUnlocked]);
 
   const handleEnable = async () => {
     setUnlocking(true);

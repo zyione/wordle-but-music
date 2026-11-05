@@ -12,6 +12,8 @@ export default function SpotifyModal({ onSelectCached, onStartImport, onClose })
   const handleSubmit = (e) => {
     e?.preventDefault();
     if (!playlistUrl.trim()) return;
+    setError(null);
+    if (!/playlist\/[A-Za-z0-9]+|^[A-Za-z0-9]+$/.test(playlistUrl.trim())) { setError('Enter a public Spotify playlist link.'); return; }
 
     if (onStartImport) {
       onStartImport(playlistUrl.trim());
