@@ -200,7 +200,7 @@ export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate,
 
           {targetSong.source_track_id && (
             <a
-              href={`https://www.deezer.com/track/${targetSong.source_track_id}`}
+              href={targetSong.source === 'itunes' ? `https://music.apple.com/song/${targetSong.source_track_id.replace('itunes_', '')}` : `https://www.deezer.com/track/${targetSong.source_track_id}`}
               target="_blank"
               rel="noopener noreferrer"
               style={{
@@ -213,7 +213,7 @@ export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate,
                 textDecoration: 'none'
               }}
             >
-              <span>Listen full song on Deezer</span>
+              <span>Listen on {targetSong.source === 'itunes' ? 'Apple Music' : 'Deezer'}</span>
               <ExternalLink size={14} />
             </a>
           )}

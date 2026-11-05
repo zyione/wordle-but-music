@@ -143,14 +143,15 @@ Send a `POST` request to `http://localhost:4000/admin/puzzle`:
 | `GET` | `/api/config` | Returns audio snippet duration thresholds and max guesses |
 | `GET` | `/api/puzzle/today` | Returns today's daily puzzle ID & preview audio stream URL |
 | `GET` | `/api/puzzle/random` | Returns a non-repeating random song puzzle for Unlimited Mode |
-| `POST` | `/api/spotify/import` | Body: `{ playlistUrl }` → parses Spotify playlist & streams Deezer previews |
+| `POST` | `/api/spotify/import` | Body: `{ playlistUrl }` → starts a background import and returns a `jobId` |
+| `GET` | `/api/spotify/import/:jobId` | Progress, playable song IDs and ready counts for your import |
 | `GET` | `/api/puzzle/spotify` | Query: `?songIds=1,2,3...&excludeIds=1,2` → returns a random song puzzle from Spotify playlist |
-| `GET` | `/api/audio/proxy` | Query: `?url=...` → Audio proxy for 100% cross-browser playback (Zen, Firefox, Chrome, Safari) |
+| `GET` | `/api/audio/proxy` | Trusted-host preview proxy with expired-URL recovery and byte-range support |
 | `GET` | `/api/search?q=` | Live autocomplete search against local song database |
-| `POST` | `/api/guess` | Body: `{ puzzleId, anonId, songId, isSkip, mode }` → validates guess |
-| `POST` | `/admin/songs` | Body: `{ title, artist }` → fetches Deezer preview & artwork, adds to DB |
-| `POST` | `/admin/puzzle` | Body: `{ date, songId }` → schedules target song for a calendar date |
-| `GET` | `/admin/songs` | Returns list of all songs in database |
+| `POST` | `/api/guess` | Body: `{ puzzleId, requestId, songId, isSkip, skipCount, currentGuessesCount }` → validates a server-owned game |
+| `POST` | `/api/admin/songs` | Admin only: adds a track with preview and artwork |
+| `POST` | `/api/admin/puzzle` | Admin only: schedules a song for a date |
+| `GET` | `/api/admin/songs` | Admin only: lists songs |
 
 ---
 
@@ -180,3 +181,15 @@ Send a `POST` request to `http://localhost:4000/admin/puzzle`:
 ## 📜 License
 
 MIT License — feel free to customize, modify, and host your own daily music guessing game!
+
+## Authentication, imports, and validation
+
+Use Node.js 22.16 or newer. `POST /api/session` creates or restores a guest session and returns a token and player ID. Player/profile/party requests require `Authorization: Bearer <token>`. The server verifies identity, targets, elapsed time and scores. Profile PINs are hashed and are no longer saved in browser storage. Existing profiles remain accessible using their name and PIN.
+
+Admin routes require the separate `ADMIN_TOKEN` through the same header format. They remain disabled when that environment variable is unset. Public browser console reset helpers were removed.
+
+Spotify imports return HTTP 202 and a background job ID. Poll the job endpoint for ready song IDs and progress. Playback starts after three songs are ready while later tracks continue processing. Jobs and partial progress persist across server restarts, and the browser resumes watching an active import after reload. Public Spotify embeds expose a limited set of tracks; private or unavailable playlists return an error. Tracks without matching supported previews are skipped.
+
+`GET /api/users/stats` returns daily history and separate practice counters. Daily streaks use consecutive puzzle dates; mixed legacy browser counters are not treated as reliable daily history.
+
+Validation commands: `npm test --prefix server`, `npm test --prefix client`, `npm run lint --prefix client`, and `npm run build --prefix client`. See `DEPLOYMENT_GUIDE.md` for private backups and the single-server persistence model.
