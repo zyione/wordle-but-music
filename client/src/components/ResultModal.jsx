@@ -60,6 +60,10 @@ export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate,
       setIsPlaying(false);
     } else {
       audio.volume = isMuted ? 0 : volume;
+      if (audio.error) {
+        audio.src = `${audioSrc}&refresh=1&retry=${Date.now()}`;
+        audio.load();
+      }
       audio.play().then(() => {
         setIsPlaying(true);
       }).catch(err => console.error('Audio play error:', err));

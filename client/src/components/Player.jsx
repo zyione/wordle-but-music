@@ -100,56 +100,32 @@ export default function Player({
   }, [activeMaxMs]);
 
   const attemptPlay = async (audio, durationMs) => {
-    // Resume AudioContext if suspended
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (AudioContext) {
-      try {
-        const ctx = new AudioContext();
-        if (ctx.state === "suspended") {
-          await ctx.resume();
-        }
-      } catch {}
-    }
-
-    if (audio.readyState === 0) {
-      audio.load();
-    }
-
     try {
+      // A failed media resource must be reloaded before play() can succeed.
+      if (audio.error || audioError) {
+        audio.src = `${activeAudioSrc}${activeAudioSrc.includes('?') ? '&' : '?'}refresh=1&retry=${Date.now()}`;
+        audio.load();
+      }
       await audio.play();
       setIsPlaying(true);
       setAudioError(false);
-      const remainingMs = durationMs - audio.currentTime * 1000;
-      if (timerRef.current) clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(
-        () => {
-          audio.pause();
-          audio.currentTime = 0;
-          setIsPlaying(false);
-        },
-        Math.max(0, remainingMs),
-      );
-    } catch (err) {
-      console.warn("Audio play attempt notice:", err.name, err.message);
-      // Retry once after 150ms gesture sync
-      try {
-        await new Promise((r) => setTimeout(r, 150));
-        await audio.play();
-        setIsPlaying(true);
-        setAudioError(false);
-      } catch (retryErr) {
-        console.warn("Audio play retry failed:", retryErr);
+      clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        audio.pause();
+        audio.currentTime = 0;
+        setCurrentTime(0);
         setIsPlaying(false);
-        setAudioError(true);
-      }
+      }, Math.max(0, durationMs - audio.currentTime * 1000));
+    } catch (err) {
+      console.warn('Audio playback failed:', err.name);
+      setIsPlaying(false);
+      setAudioError(true);
     }
   };
 
   const togglePlay = () => {
     const audio = audioRef.current;
     if (!audio || !previewUrl) return;
-
-    setAudioError(false);
 
     if (isPlaying) {
       audio.pause();

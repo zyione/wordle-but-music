@@ -1,77 +1,54 @@
 import express from 'express';
 import db from '../db/db.js';
-import { fetchTrackMetadata } from '../services/deezerClient.js';
-
+import { fetchAudio, freshPreviewCandidates, fallbackPreviewCandidates, isExpiredPreview, isTrustedAudioUrl } from '../services/audioPreview.js';
 const router = express.Router();
-
-const FETCH_HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-  'Referer': 'https://www.deezer.com/',
-  'Origin': 'https://www.deezer.com',
-  'Accept': '*/*'
-};
-
-// Proxy endpoint to bypass CORS & browser media streaming blocks in Firefox/Zen/Chrome
 router.get('/audio/proxy', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
   try {
-    let audioUrl = req.query.url;
-    const songId = req.query.songId;
-
-    if (!audioUrl && !songId) {
-      return res.status(400).send('Missing url or songId query parameter');
-    }
-
-    // If songId provided but no audioUrl, get preview_url from DB
-    if (!audioUrl && songId) {
-      const song = db.prepare('SELECT preview_url FROM songs WHERE id = ?').get(songId);
-      audioUrl = song?.preview_url;
-    }
-
-    if (!audioUrl) {
-      return res.status(404).send('Audio preview URL not found');
-    }
-
-    let response = await fetch(audioUrl, { headers: FETCH_HEADERS }).catch(() => null);
-
-    // Auto-healing fallback if upstream URL returns HTTP error (e.g. 403 Forbidden on expired Deezer token)
-    if (!response || !response.ok) {
-      console.warn(`Upstream audio return ${response ? response.status : 'ERR'} for audio proxy, attempting auto-refresh...`);
-
-      let song;
-      if (songId) {
-        song = db.prepare('SELECT id, title, artist FROM songs WHERE id = ?').get(songId);
-      }
-      if (!song) {
-        song = db.prepare('SELECT id, title, artist FROM songs WHERE preview_url = ?').get(audioUrl);
-      }
-
-      if (song) {
-        const fresh = await fetchTrackMetadata(song.title, song.artist);
-        if (fresh && fresh.preview_url) {
-          console.log(`Auto-refreshed preview URL for "${song.title}" (ID: ${song.id})`);
-          db.prepare('UPDATE songs SET preview_url = ? WHERE id = ?').run(fresh.preview_url, song.id);
-          audioUrl = fresh.preview_url;
-          response = await fetch(audioUrl, { headers: FETCH_HEADERS }).catch(() => null);
+    const songId = Number(req.query.songId);
+    let song = Number.isSafeInteger(songId) && songId > 0 ? db.prepare('SELECT * FROM songs WHERE id = ?').get(songId) : null;
+    const suppliedUrl = typeof req.query.url === 'string' ? req.query.url : null;
+    if (suppliedUrl && !isTrustedAudioUrl(suppliedUrl)) return res.status(400).json({ error: 'Unsupported audio source' });
+    if (!song && suppliedUrl) song = db.prepare('SELECT * FROM songs WHERE preview_url = ?').get(suppliedUrl);
+    let audioUrl = suppliedUrl || song?.preview_url;
+    if (!audioUrl) return res.status(404).json({ error: 'Audio preview not found' });
+    let response = req.query.refresh !== '1' && !isExpiredPreview(audioUrl) ? await fetchAudio(audioUrl) : null;
+    if (!response && song) {
+      for (const candidates of [freshPreviewCandidates, fallbackPreviewCandidates]) {
+        for (const candidate of await candidates(song)) {
+          response = await fetchAudio(candidate);
+          if (response) { audioUrl = candidate; break; }
         }
+        if (response) break;
       }
+      if (response && audioUrl !== song.preview_url) db.prepare('UPDATE songs SET preview_url = ? WHERE id = ?').run(audioUrl, song.id);
     }
-
-    if (!response || !response.ok) {
-      console.error(`Failed audio proxy stream for ${audioUrl}: status ${response ? response.status : 'ERR'}`);
-      return res.status(response ? response.status : 500).send('Failed to fetch audio stream from upstream');
+    if (!response) return res.status(502).json({ error: 'Preview temporarily unavailable. Please try again.' });
+    const reader = response.body.getReader();
+    const chunks = [];
+    let length = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      length += value.length;
+      if (length > 2 * 1024 * 1024) { await reader.cancel(); return res.status(502).json({ error: 'Invalid preview size' }); }
+      chunks.push(Buffer.from(value));
     }
-
-    const contentType = response.headers.get('content-type') || 'audio/mpeg';
-    res.setHeader('Content-Type', contentType);
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Cache-Control', 'public, max-age=86400');
-
-    const buffer = await response.arrayBuffer();
-    res.send(Buffer.from(buffer));
+    const buffer = Buffer.concat(chunks);
+    res.setHeader('Content-Type', response.headers.get('content-type') || 'audio/mpeg');
+    res.setHeader('Accept-Ranges', 'bytes');
+    const range = req.headers.range;
+    if (range) {
+      const match = /^bytes=(\d*)-(\d*)$/.exec(range);
+      const start = match?.[1] ? Number(match[1]) : match?.[2] ? Math.max(0, buffer.length - Number(match[2])) : 0;
+      const end = match?.[1] && match?.[2] ? Math.min(Number(match[2]), buffer.length - 1) : buffer.length - 1;
+      if (!match || start > end || start >= buffer.length) return res.status(416).set('Content-Range', `bytes */${buffer.length}`).end();
+      return res.status(206).set('Content-Range', `bytes ${start}-${end}/${buffer.length}`).send(buffer.subarray(start, end + 1));
+    }
+    res.send(buffer);
   } catch (error) {
-    console.error('Audio proxy error:', error.message);
-    res.status(500).send('Audio proxy error');
+    console.error('Audio proxy failed:', error.message);
+    res.status(502).json({ error: 'Audio temporarily unavailable. Please retry.' });
   }
 });
-
 export default router;
