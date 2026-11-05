@@ -7,19 +7,10 @@ import {
   getPartyRoundSong,
   submitPartyRoundResult
 } from '../services/partyService.js';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
-function getSnippetConfig() {
-  const configPath = path.resolve(__dirname, '../config/snippetDurations.json');
-  return JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-}
+
 
 // POST /api/party/create - Create a new party session
 router.post('/party/create', async (req, res) => {
@@ -93,17 +84,9 @@ router.post('/party/:code/start', (req, res) => {
 router.get('/party/:code/round/:roundNumber', async (req, res) => {
   try {
     const { code, roundNumber } = req.params;
-    const roundData = await getPartyRoundSong(code, roundNumber);
-    const config = getSnippetConfig();
+    const roundData = await getPartyRoundSong(code, roundNumber, req.identity);
 
-    res.json({
-      roundNumber: roundData.roundNumber,
-      totalRounds: roundData.totalRounds,
-      targetSongId: roundData.songId,
-      previewUrl: roundData.previewUrl,
-      maxGuesses: config.maxGuesses,
-      guessDurationsMs: config.guessDurationsMs
-    });
+    res.json(roundData);
   } catch (error) {
     console.error('Error fetching party round:', error);
     res.status(400).json({ error: error.message || 'Failed to fetch party round' });

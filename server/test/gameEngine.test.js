@@ -1,0 +1,60 @@
+import test, { after } from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+const directory = mkdtempSync(path.join(tmpdir(), 'song-guesser-game-test-'));
+process.env.DISABLE_CLOUD_BACKUP = '1';
+process.env.DB_PATH = path.join(directory, 'test.db');
+const { default: db } = await import('../db/db.js');
+const { migrate } = await import('../db/migrate.js');
+const { createRun, submitGuess, getRun } = await import('../services/gameEngine.js');
+const party = await import('../services/partyService.js');
+migrate();
+for (let id = 1; id <= 4; id++) db.prepare('INSERT INTO songs (id, title, artist, preview_url) VALUES (?, ?, ?, ?)').run(id, `Song ${id}`, 'Artist', 'https://a.dzcdn.net/test.mp3');
+after(async () => { await db.close(); rmSync(directory, { recursive: true }); });
+
+test('guesses are bound to the session and server target, not a supplied target or mode', () => {
+  const run = createRun({ owner: 'alice', songId: 1, mode: 'unlimited' });
+  assert.throws(() => submitGuess('other', { puzzleId: run.id, requestId: 'request01', songId: 1, currentGuessesCount: 0 }), /not found/);
+  const result = submitGuess('alice', { puzzleId: run.id, requestId: 'request02', songId: 2, targetSongId: 2, mode: 'daily', currentGuessesCount: 0, timeTakenMs: -100000 });
+  assert.equal(result.isCorrect, false);
+  assert.equal(result.guessesUsed, 1);
+  assert.equal(result.targetSong, null);
+});
+test('skips are bounded and retried requests do not consume another guess', () => {
+  const run = createRun({ owner: 'bob', songId: 1, mode: 'spotify' });
+  assert.throws(() => submitGuess('bob', { puzzleId: run.id, requestId: 'invalid01', isSkip: true, skipCount: 100000, currentGuessesCount: 0 }), /skips/);
+  assert.equal(getRun(run.id, 'bob').guesses_used, 0);
+  const request = { puzzleId: run.id, requestId: 'repeat001', isSkip: true, skipCount: 5, currentGuessesCount: 0 };
+  const first = submitGuess('bob', request);
+  assert.deepEqual(submitGuess('bob', request), first);
+  assert.equal(first.isGameOver, false);
+  assert.equal(first.guessesUsed, 5);
+  assert.throws(() => submitGuess('bob', { ...request, requestId: 'stale0001' }), /changed/);
+  const end = submitGuess('bob', { puzzleId: run.id, requestId: 'finish001', songId: 1, currentGuessesCount: 5 });
+  assert.equal(end.isGameOver, true);
+  assert.throws(() => submitGuess('bob', { puzzleId: run.id, requestId: 'finish002', songId: 1, currentGuessesCount: 6 }), /complete/);
+});
+test('server timing and accumulated penalties determine the final score', () => {
+  const run = createRun({ owner: 'score', songId: 1, mode: 'unlimited' });
+  db.prepare('UPDATE game_runs SET started_at = ? WHERE id = ?').run(Date.now() - 10000, run.id);
+  submitGuess('score', { puzzleId: run.id, requestId: 'penalty01', songId: 2, currentGuessesCount: 0 });
+  const result = submitGuess('score', { puzzleId: run.id, requestId: 'penalty02', songId: 1, currentGuessesCount: 1, timeTakenMs: 0 });
+  assert.equal(result.score <= 1530, true);
+  assert.equal(getRun(run.id, 'score').wrong_guesses, 1);
+});
+test('party rounds require membership, ordering, and actual completed guesses', async () => {
+  const room = await party.createParty({ hostAnonId: 'host', numRounds: 2 });
+  await assert.rejects(party.getPartyRoundSong(room.code, 1, 'host'), /wait/);
+  party.startParty(room.code, 'host');
+  await assert.rejects(party.getPartyRoundSong(room.code, 1, 'outsider'), /Join/);
+  await assert.rejects(party.getPartyRoundSong(room.code, 2, 'host'), /previous/);
+  const round = await party.getPartyRoundSong(room.code, 1, 'host');
+  assert.throws(() => party.submitPartyRoundResult({ partyCode: room.code, roundNumber: 1, anonId: 'host', isSolved: true, guessesUsed: 1 }), /Complete/);
+  submitGuess('host', { puzzleId: round.puzzleId, requestId: 'party0001', songId: round.targetSongId, currentGuessesCount: 0 });
+  const before = db.prepare('SELECT score FROM party_scores WHERE party_code = ?').get(room.code).score;
+  party.submitPartyRoundResult({ partyCode: room.code, roundNumber: 1, anonId: 'host', isSolved: true, guessesUsed: -10000 });
+  assert.equal(db.prepare('SELECT score FROM party_scores WHERE party_code = ?').get(room.code).score, before);
+  assert.equal((await party.getPartyRoundSong(room.code, 2, 'host')).roundNumber, 2);
+});

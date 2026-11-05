@@ -1,24 +1,15 @@
 import express from 'express';
+import { createRun, publicPuzzle } from '../services/gameEngine.js';
 import { pickSong, parseSongIds } from '../services/randomSongs.js';
 import db from '../db/db.js';
 import { parseSpotifyPlaylist } from '../services/spotifyClient.js';
 import { fetchTrackMetadata } from '../services/deezerClient.js';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
-function getSnippetConfig() {
-  const configPath = path.resolve(__dirname, '../config/snippetDurations.json');
-  return JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-}
+
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-import { ensureFreshPreviewUrl } from '../services/previewRefresher.js';
 
 // Import tracks from a Spotify playlist URL with streaming NDJSON progress & instant first match
 router.post('/spotify/import', async (req, res) => {
@@ -164,19 +155,8 @@ router.get('/puzzle/spotify', async (req, res) => {
       return res.status(404).json({ error: 'Selected song not found in database' });
     }
 
-    const freshUrl = await ensureFreshPreviewUrl(song.id, song.title, song.artist, song.preview_url);
-
-    const config = getSnippetConfig();
-
-    res.json({
-      puzzleId: `spotify_${song.id}_${Date.now()}`,
-      targetSongId: song.id,
-      previewUrl: freshUrl,
-      maxGuesses: config.maxGuesses,
-      guessDurationsMs: config.guessDurationsMs,
-      mode: 'spotify',
-      historyReset
-    });
+    const run = createRun({ owner: req.identity, songId: song.id, mode: 'spotify' });
+    res.set('Cache-Control', 'no-store').json({ ...publicPuzzle(run), historyReset });
   } catch (error) {
     console.error('Error fetching Spotify mode puzzle:', error);
     res.status(500).json({ error: 'Failed to retrieve Spotify puzzle' });

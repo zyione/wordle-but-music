@@ -9,6 +9,8 @@ export function resetToday() {
   const puzzle = db.prepare('SELECT id FROM puzzles WHERE puzzle_date = ?').get(today);
 
   if (puzzle) {
+    db.prepare('DELETE FROM game_requests WHERE game_id IN (SELECT id FROM game_runs WHERE puzzle_id = ?)').run(puzzle.id);
+    db.prepare('DELETE FROM game_runs WHERE puzzle_id = ?').run(puzzle.id);
     // Delete guesses & attempts associated with today's puzzle
     const attempts = db.prepare('SELECT id FROM attempts WHERE puzzle_id = ?').all(puzzle.id);
     for (const att of attempts) {

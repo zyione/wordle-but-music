@@ -104,3 +104,31 @@ CREATE TABLE IF NOT EXISTS auth_sessions (
     expires_at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS auth_sessions_identity ON auth_sessions(anon_id);
+
+CREATE TABLE IF NOT EXISTS game_runs (
+    id TEXT PRIMARY KEY,
+    mode TEXT NOT NULL,
+    owner_id TEXT NOT NULL,
+    song_id INTEGER NOT NULL,
+    puzzle_id INTEGER,
+    party_code TEXT,
+    round_number INTEGER,
+    started_at INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL,
+    guesses_json TEXT NOT NULL DEFAULT '[]',
+    guesses_used INTEGER NOT NULL DEFAULT 0,
+    is_solved INTEGER NOT NULL DEFAULT 0,
+    skips_used INTEGER NOT NULL DEFAULT 0,
+    wrong_guesses INTEGER NOT NULL DEFAULT 0,
+    score INTEGER NOT NULL DEFAULT 0,
+    time_taken_ms INTEGER NOT NULL DEFAULT 0,
+    completed_at TEXT
+);
+CREATE UNIQUE INDEX IF NOT EXISTS daily_game_owner ON game_runs(owner_id, puzzle_id) WHERE mode = 'daily';
+CREATE UNIQUE INDEX IF NOT EXISTS party_game_owner ON game_runs(owner_id, party_code, round_number) WHERE mode = 'party';
+CREATE TABLE IF NOT EXISTS game_requests (
+    game_id TEXT NOT NULL,
+    request_id TEXT NOT NULL,
+    response_json TEXT NOT NULL,
+    PRIMARY KEY(game_id, request_id)
+);

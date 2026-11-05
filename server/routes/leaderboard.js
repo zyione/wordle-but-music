@@ -1,6 +1,5 @@
 import express from 'express';
 import db from '../db/db.js';
-import { calculateScore } from '../services/scoring.js';
 
 const router = express.Router();
 
@@ -30,12 +29,7 @@ router.get('/leaderboard/daily', (req, res) => {
     `).all(date);
 
     const leaderboard = rows.map((r, idx) => {
-      const computedScore = r.score > 0 ? r.score : calculateScore({
-        isSolved: Boolean(r.isSolved),
-        guessNumber: r.guessesUsed || 1,
-        maxGuesses: 6,
-        timeTakenMs: r.timeTakenMs || 10000
-      });
+      const computedScore = r.score || 0;
 
       return {
         rank: idx + 1,
@@ -83,12 +77,7 @@ router.get('/leaderboard/alltime', (req, res) => {
     `).all();
 
     const leaderboard = rows.map((r, idx) => {
-      const computedScore = r.score > 0 ? r.score : calculateScore({
-        isSolved: Boolean(r.isSolved),
-        guessNumber: r.guessesUsed || 1,
-        maxGuesses: 6,
-        timeTakenMs: r.timeTakenMs || 10000
-      });
+      const computedScore = r.score || 0;
 
       return {
         rank: idx + 1,

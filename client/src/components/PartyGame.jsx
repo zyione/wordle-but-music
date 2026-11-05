@@ -45,6 +45,14 @@ export default function PartyGame({ partyState, anonId, apiBaseUrl, onStateUpdat
 
         const data = await res.json();
         setRoundData(data);
+        if (data.userAttempt) {
+          setGuesses(data.userAttempt.guesses);
+          setIsGameOver(data.userAttempt.isGameOver);
+          setIsSolved(data.userAttempt.isSolved);
+          setTargetSong(data.userAttempt.targetSong);
+          setRoundScore(data.userAttempt.score);
+          setHasSubmittedRound(data.userAttempt.isGameOver);
+        }
       } catch (err) {
         console.error('Error fetching party round:', err);
         setError(err.message || 'Failed to load round');
@@ -68,7 +76,8 @@ export default function PartyGame({ partyState, anonId, apiBaseUrl, onStateUpdat
       setRoundTimeMs(timeTakenMs);
 
       const bodyPayload = {
-        puzzleId: `party_${partyState.code}_r${currentRound}`,
+        requestId: crypto.randomUUID(),
+        puzzleId: roundData.puzzleId,
         anonId,
         songId: selectedSong.id,
         isSkip: false,
@@ -115,7 +124,8 @@ export default function PartyGame({ partyState, anonId, apiBaseUrl, onStateUpdat
       setRoundTimeMs(timeTakenMs);
 
       const bodyPayload = {
-        puzzleId: `party_${partyState.code}_r${currentRound}`,
+        requestId: crypto.randomUUID(),
+        puzzleId: roundData.puzzleId,
         anonId,
         songId: null,
         isSkip: true,
@@ -163,7 +173,8 @@ export default function PartyGame({ partyState, anonId, apiBaseUrl, onStateUpdat
       const skipCount = targetIndex - currentCount;
 
       const bodyPayload = {
-        puzzleId: `party_${partyState.code}_r${currentRound}`,
+        requestId: crypto.randomUUID(),
+        puzzleId: roundData.puzzleId,
         anonId,
         songId: null,
         isSkip: true,

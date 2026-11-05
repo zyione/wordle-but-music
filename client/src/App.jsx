@@ -477,6 +477,7 @@ export default function App() {
     try {
       const timeTakenMs = Date.now() - startTime;
       const bodyPayload = {
+        requestId: crypto.randomUUID(),
         puzzleId: puzzleData.puzzleId,
         anonId,
         songId: selectedSong.id,
@@ -529,6 +530,7 @@ export default function App() {
     try {
       const timeTakenMs = Date.now() - startTime;
       const bodyPayload = {
+        requestId: crypto.randomUUID(),
         puzzleId: puzzleData.puzzleId,
         anonId,
         songId: null,
@@ -584,6 +586,7 @@ export default function App() {
       const skipCount = targetIndex - currentCount;
 
       const bodyPayload = {
+        requestId: crypto.randomUUID(),
         puzzleId: puzzleData.puzzleId,
         anonId,
         songId: null,

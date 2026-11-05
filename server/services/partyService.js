@@ -1,10 +1,9 @@
 import db from '../db/db.js';
+import { createRun, publicPuzzle } from './gameEngine.js';
 import { randomInt, randomBytes } from 'node:crypto';
 import { shuffleSongs } from './randomSongs.js';
 import { parseSpotifyPlaylist } from './spotifyClient.js';
 import { fetchTrackMetadata } from './deezerClient.js';
-import { calculateScore } from './scoring.js';
-import { ensureFreshPreviewUrl } from './previewRefresher.js';
 
 export function generatePartyCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -94,6 +93,7 @@ export function joinParty({ partyCode, anonId, displayName = 'Player', avatarCol
     throw new Error('Party not found. Please check the party code.');
   }
 
+  if (party.status !== 'lobby' && !db.prepare('SELECT id FROM party_members WHERE party_code = ? AND anon_id = ?').get(cleanCode, anonId)) throw new Error('This party has already started.');
   const existingMember = db.prepare('SELECT id FROM party_members WHERE party_code = ? AND anon_id = ?').get(cleanCode, anonId);
   const currentMembers = db.prepare('SELECT COUNT(*) as count FROM party_members WHERE party_code = ?').get(cleanCode);
 
@@ -117,6 +117,8 @@ export function getPartyState(partyCode, currentAnonId = null) {
   if (!party) {
     return null;
   }
+
+  if (currentAnonId && !db.prepare('SELECT id FROM party_members WHERE party_code = ? AND anon_id = ?').get(cleanCode, currentAnonId)) return null;
 
   const members = db.prepare(`
     SELECT anon_id as anonId, display_name as displayName, avatar_color as avatarColor, joined_at as joinedAt
@@ -191,11 +193,12 @@ export function startParty(partyCode, hostAnonId) {
     throw new Error('Only the party host can start the game.');
   }
 
+  if (party.status !== 'lobby') throw new Error('Party has already started.');
   db.prepare("UPDATE parties SET status = 'playing' WHERE code = ?").run(cleanCode);
   return getPartyState(cleanCode, hostAnonId);
 }
 
-export async function getPartyRoundSong(partyCode, roundNumber) {
+export async function getPartyRoundSong(partyCode, roundNumber, anonId) {
   const cleanCode = (partyCode || '').trim().toUpperCase();
   const party = db.prepare('SELECT * FROM parties WHERE code = ?').get(cleanCode);
 
@@ -203,6 +206,10 @@ export async function getPartyRoundSong(partyCode, roundNumber) {
     throw new Error('Party not found.');
   }
 
+  const member = db.prepare('SELECT id FROM party_members WHERE party_code = ? AND anon_id = ?').get(cleanCode, anonId);
+  if (!member || party.status === 'lobby') throw new Error('Join the party and wait for the host to start.');
+  if (!Number.isInteger(Number(roundNumber))) throw new Error('Invalid round number.');
+  if (Number(roundNumber) > 1 && !db.prepare('SELECT id FROM party_scores WHERE party_code = ? AND anon_id = ? AND round_number = ?').get(cleanCode, anonId, Number(roundNumber) - 1)) throw new Error('Complete the previous round first.');
   const songIds = (party.playlist_song_ids || '').split(',').map(Number).filter(Boolean);
   const roundIdx = Number(roundNumber) - 1;
 
@@ -217,14 +224,8 @@ export async function getPartyRoundSong(partyCode, roundNumber) {
     throw new Error('Round song not found in database.');
   }
 
-  const freshPreviewUrl = await ensureFreshPreviewUrl(song.id, song.title, song.artist, song.preview_url);
-
-  return {
-    roundNumber: Number(roundNumber),
-    totalRounds: songIds.length,
-    songId: song.id,
-    previewUrl: freshPreviewUrl
-  };
+  const run = createRun({ owner: anonId, songId: song.id, mode: 'party', partyCode: cleanCode, roundNumber: Number(roundNumber) });
+  return { ...publicPuzzle(run), roundNumber: Number(roundNumber), totalRounds: songIds.length };
 }
 
 export function submitPartyRoundResult({ partyCode, roundNumber, anonId, isSolved, guessesUsed, timeTakenMs, skipsUsed = 0, wrongGuesses = 0 }) {
@@ -235,33 +236,7 @@ export function submitPartyRoundResult({ partyCode, roundNumber, anonId, isSolve
     throw new Error('Party not found.');
   }
 
-  const score = calculateScore({
-    isSolved: Boolean(isSolved),
-    guessNumber: Number(guessesUsed),
-    maxGuesses: 6,
-    timeTakenMs: Number(timeTakenMs),
-    skipsUsed: Number(skipsUsed),
-    wrongGuesses: Number(wrongGuesses)
-  });
-
-  db.prepare(`
-    INSERT INTO party_scores (party_code, round_number, anon_id, score, guesses_used, time_taken_ms, is_solved)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-    ON CONFLICT(party_code, round_number, anon_id) DO UPDATE SET
-      score = excluded.score,
-      guesses_used = excluded.guesses_used,
-      time_taken_ms = excluded.time_taken_ms,
-      is_solved = excluded.is_solved,
-      completed_at = CURRENT_TIMESTAMP
-  `).run(cleanCode, Number(roundNumber), anonId, score, Number(guessesUsed), Number(timeTakenMs), isSolved ? 1 : 0);
-
-  // If all members finished all rounds, mark party status as 'finished'
-  const members = db.prepare('SELECT COUNT(*) as count FROM party_members WHERE party_code = ?').get(cleanCode);
-  const totalSubmissions = db.prepare('SELECT COUNT(*) as count FROM party_scores WHERE party_code = ?').get(cleanCode);
-
-  if (totalSubmissions.count >= members.count * party.num_rounds) {
-    db.prepare("UPDATE parties SET status = 'finished' WHERE code = ?").run(cleanCode);
-  }
-
+  const completed = db.prepare("SELECT id FROM game_runs WHERE mode = 'party' AND party_code = ? AND owner_id = ? AND round_number = ? AND completed_at IS NOT NULL").get(cleanCode, anonId, Number(roundNumber));
+  if (!completed) throw new Error('Complete this round before submitting a result.');
   return getPartyState(cleanCode, anonId);
 }
