@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 const clamp = value => Number.isFinite(Number(value)) ? Math.min(1, Math.max(0, Number(value))) : .8;
+const readMuted = () => { try { return localStorage.getItem('song_guesser_muted') === 'true'; } catch { return false; } };
 const readVolume = () => { try { const saved = localStorage.getItem('song_guesser_volume'); return saved === null ? .8 : clamp(saved); } catch { return .8; } };
 export default function useAudioPlayback({ source, limitMs = 30000, autoPlay = false, resetKey }) {
   const audioRef = useRef(null);
@@ -11,7 +12,8 @@ export default function useAudioPlayback({ source, limitMs = 30000, autoPlay = f
   const [currentTime, setCurrentTime] = useState(0);
   const [audioError, setAudioError] = useState(false);
   const [volume, setVolume] = useState(readVolume);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(readMuted);
+  const settings = useRef({ volume, isMuted }); settings.current = { volume, isMuted };
   const stop = useCallback(() => {
     version.current++; starting.current = false; playing.current = false;
     clearTimeout(timer.current); audioRef.current?.pause(); setIsPlaying(false);
@@ -24,6 +26,7 @@ export default function useAudioPlayback({ source, limitMs = 30000, autoPlay = f
     try {
       if (audio.error) { audio.src = `${source}${source.includes('?') ? '&' : '?'}refresh=1&retry=${Date.now()}`; audio.load(); }
       if (audio.currentTime * 1000 >= limitMs) audio.currentTime = 0;
+      audio.volume = settings.current.isMuted ? 0 : settings.current.volume;
       await audio.play();
       if (active !== version.current) return;
       playing.current = true; setIsPlaying(true); setAudioError(false);
@@ -47,15 +50,20 @@ export default function useAudioPlayback({ source, limitMs = 30000, autoPlay = f
   }, [source, limitMs, resetKey, autoPlay, play, stop, invalidate]);
   useEffect(() => { if (audioRef.current) audioRef.current.volume = isMuted ? 0 : volume; }, [volume, isMuted, source]);
   useEffect(() => {
-    const sync = () => setVolume(readVolume());
+    const sync = () => { setVolume(readVolume()); setIsMuted(readMuted()); };
     window.addEventListener('song-guesser-volume', sync);
     return () => window.removeEventListener('song-guesser-volume', sync);
   }, []);
   const handleVolumeChange = event => {
     const value = clamp(event.target.value); setVolume(value); setIsMuted(value === 0);
-    try { localStorage.setItem('song_guesser_volume', String(value)); } catch { /* Playback works without storage. */ }
+    try { localStorage.setItem('song_guesser_volume', String(value)); localStorage.setItem('song_guesser_muted', String(value === 0)); } catch { /* Playback works without storage. */ }
     window.dispatchEvent(new Event('song-guesser-volume'));
   };
-  const toggleMute = () => { setIsMuted(muted => !muted); if (volume === 0) handleVolumeChange({ target: { value: .8 } }); };
+  const toggleMute = () => {
+    if (volume === 0) { handleVolumeChange({ target: { value: .8 } }); return; }
+    const muted = !isMuted; setIsMuted(muted);
+    try { localStorage.setItem('song_guesser_muted', String(muted)); } catch { /* Storage is optional. */ }
+    window.dispatchEvent(new Event('song-guesser-volume'));
+  };
   return { audioRef, isPlaying, currentTime, audioError, volume, isMuted, togglePlay, handleVolumeChange, toggleMute };
 }
