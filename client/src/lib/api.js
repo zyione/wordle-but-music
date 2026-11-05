@@ -3,7 +3,7 @@ let sessionPromise;
 export function getSession() {
   if (!sessionPromise) sessionPromise = (async () => {
     const token = localStorage.getItem('song_guesser_session_token');
-    const response = await window.fetch(`${API_BASE_URL}/api/session`, { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    const response = await window.fetch(`${API_BASE_URL}/api/session`, { method: 'POST', signal: AbortSignal.timeout(20000), headers: token ? { Authorization: `Bearer ${token}` } : {} });
     if (!response.ok) throw new Error('Unable to start game session. Please retry.');
     const session = await response.json();
     localStorage.setItem('song_guesser_session_token', session.token);
@@ -16,5 +16,7 @@ export async function apiFetch(url, options = {}) {
   const session = await getSession();
   const headers = new Headers(options.headers);
   headers.set('Authorization', `Bearer ${session.token}`);
-  return window.fetch(url, { ...options, headers });
+  const timeout = AbortSignal.timeout(20000);
+  const signal = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout;
+  return window.fetch(url, { ...options, headers, signal });
 }
