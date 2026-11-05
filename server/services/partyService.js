@@ -1,33 +1,16 @@
 import db from '../db/db.js';
+import { randomInt, randomBytes } from 'node:crypto';
+import { shuffleSongs } from './randomSongs.js';
 import { parseSpotifyPlaylist } from './spotifyClient.js';
 import { fetchTrackMetadata } from './deezerClient.js';
 import { calculateScore } from './scoring.js';
 import { ensureFreshPreviewUrl } from './previewRefresher.js';
 
-// Seeded PRNG (Mulberry32) for deterministic song ordering across all party members
-function mulberry32(a) {
-  return function () {
-    let t = (a += 0x6d2b79f5);
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function stringToSeed(str) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash << 5) - hash + str.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash) || 123456789;
-}
-
 export function generatePartyCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
   for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
+    code += chars.charAt(randomInt(chars.length));
   }
   return code;
 }
@@ -77,23 +60,16 @@ export async function createParty({ hostAnonId, displayName = 'Host', avatarColo
     throw new Error('No playable songs available to create party.');
   }
 
-  const seed = `${code}_${Date.now()}`;
-  const prng = mulberry32(stringToSeed(seed));
-
-  // Shuffle candidate song IDs deterministically
-  const shuffled = [...playlistSongIds];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(prng() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-
-  const selectedRoundSongs = shuffled.slice(0, rounds);
+  const seed = randomBytes(16).toString('hex');
+  const candidates = db.prepare('SELECT id, preview_url FROM songs').all().filter(s => playlistSongIds.includes(s.id));
+  const selectedRoundSongs = shuffleSongs(candidates).slice(0, rounds).map(s => s.id);
+  if (!selectedRoundSongs.length) throw new Error('No playable songs available.');
 
   // Insert party record
   db.prepare(`
     INSERT INTO parties (code, host_anon_id, status, num_rounds, max_players, song_source, playlist_url, playlist_song_ids, seed)
     VALUES (?, ?, 'lobby', ?, ?, ?, ?, ?, ?)
-  `).run(code, hostAnonId, rounds, cappedMaxPlayers, songSource, playlistUrl || null, selectedRoundSongs.join(','), seed);
+  `).run(code, hostAnonId, selectedRoundSongs.length, cappedMaxPlayers, songSource, playlistUrl || null, selectedRoundSongs.join(','), seed);
 
   // Ensure host profile exists and add to party members
   db.prepare(`

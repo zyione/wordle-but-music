@@ -1,4 +1,5 @@
 import express from 'express';
+import { pickSong, parseSongIds } from '../services/randomSongs.js';
 import db from '../db/db.js';
 import { scheduleToday } from '../db/scheduleToday.js';
 import { ensureFreshPreviewUrl } from '../services/previewRefresher.js';
@@ -142,27 +143,8 @@ router.get('/puzzle/today', async (req, res) => {
 // GET random puzzle for UNLIMITED mode (excluding previously played song IDs in session)
 router.get('/puzzle/random', async (req, res) => {
   try {
-    const rawExclude = (req.query.excludeIds || '').toString();
-    const excludeIds = rawExclude.split(',').map(Number).filter(Boolean);
-
-    let song;
-    let historyReset = false;
-
-    if (excludeIds.length > 0) {
-      const placeholders = excludeIds.map(() => '?').join(',');
-      song = db.prepare(`
-        SELECT id, title, artist, preview_url FROM songs
-        WHERE id NOT IN (${placeholders})
-        ORDER BY RANDOM()
-        LIMIT 1
-      `).get(...excludeIds);
-    }
-
-    if (!song) {
-      // All songs played in session, reset history and pick random song
-      song = db.prepare('SELECT id, title, artist, preview_url FROM songs ORDER BY RANDOM() LIMIT 1').get();
-      historyReset = true;
-    }
+    const excludeIds = parseSongIds(req.query.excludeIds);
+    const { song, historyReset } = pickSong(db.prepare("SELECT id, title, artist, preview_url FROM songs WHERE preview_url <> ''").all(), excludeIds);
 
     if (!song) {
       return res.status(404).json({ error: 'No songs available in database to play unlimited mode.' });

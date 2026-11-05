@@ -209,8 +209,12 @@ export default function App() {
   };
 
   // Load puzzle based on active mode
-  const fetchPuzzle = async (mode, customSpotifyIds = null, currentExcludes = playedSongIds) => {
+  const fetchPuzzle = async (mode, customSpotifyIds = null, currentExcludes = null) => {
     if (mode === 'party') return;
+    if (!currentExcludes) {
+      try { currentExcludes = JSON.parse(sessionStorage.getItem(`song_guesser_history_${mode}`) || '[]'); } catch { currentExcludes = []; }
+      if (!Array.isArray(currentExcludes)) currentExcludes = [];
+    }
 
     try {
       setLoading(true);
@@ -242,7 +246,8 @@ export default function App() {
       const data = await res.json();
       setPuzzleData(data);
 
-      if (data.targetSongId) {
+      if (data.targetSongId && mode !== 'daily') {
+        sessionStorage.setItem(`song_guesser_history_${mode}`, JSON.stringify(data.historyReset ? [data.targetSongId] : [...currentExcludes, data.targetSongId]));
         if (data.historyReset) {
           setPlayedSongIds([data.targetSongId]);
         } else {
@@ -297,7 +302,7 @@ export default function App() {
   useEffect(() => {
     if (gameMode !== 'party') {
       setPlayedSongIds([]);
-      fetchPuzzle(gameMode, null, []);
+      fetchPuzzle(gameMode);
     }
   }, [gameMode]);
 
@@ -386,7 +391,7 @@ export default function App() {
     setSpotifyPlaylist(playlist);
     setGameMode('spotify');
     setPlayedSongIds([]);
-    fetchPuzzle('spotify', playlist.songIds, []);
+    if (gameMode === 'spotify') fetchPuzzle('spotify', playlist.songIds);
   };
 
   // Background stream importer
@@ -459,7 +464,7 @@ export default function App() {
                   hasLaunchedGame = true;
                   setGameMode('spotify');
                   setPlayedSongIds([]);
-                  fetchPuzzle('spotify', msg.songIds, []);
+                  if (gameMode === 'spotify') fetchPuzzle('spotify', msg.songIds);
                 }
               }
             } else if (msg.type === 'complete') {

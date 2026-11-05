@@ -1,18 +1,6 @@
 import db from './db.js';
+import { pickSong } from '../services/randomSongs.js';
 import { fileURLToPath } from 'url';
-
-/**
- * Deterministic string hash (Mulberry/djb2 style)
- * Converts date string "YYYY-MM-DD" to a fixed positive integer.
- */
-function hashDateString(dateStr) {
-  let hash = 5381;
-  for (let i = 0; i < dateStr.length; i++) {
-    hash = ((hash << 5) + hash) + dateStr.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash);
-}
 
 export function scheduleToday() {
   const today = new Date().toISOString().split('T')[0];
@@ -25,24 +13,9 @@ export function scheduleToday() {
     return existing;
   }
 
-  // Retrieve curated English Pop Hits pool (seed tracks 1-50)
-  const popSongs = db.prepare(`
-    SELECT id, title, artist
-    FROM songs
-    WHERE id <= 50 OR source_track_id LIKE 'seed_%'
-    ORDER BY id ASC
-  `).all();
-
-  let selectedSong = null;
-
-  if (popSongs.length > 0) {
-    // Deterministic index calculation guarantees identical daily song for everyone on any given date
-    const dailyIndex = hashDateString(today) % popSongs.length;
-    selectedSong = popSongs[dailyIndex];
-  } else {
-    // Fallback if seed list is empty
-    selectedSong = db.prepare('SELECT id, title, artist FROM songs ORDER BY id ASC LIMIT 1').get();
-  }
+  const songs = db.prepare("SELECT id, title, artist, preview_url FROM songs WHERE preview_url <> ''").all();
+  const history = db.prepare('SELECT song_id FROM puzzles WHERE puzzle_date < ? ORDER BY puzzle_date DESC LIMIT ?').all(today, Math.max(0, songs.length - 1)).reverse().map(p => p.song_id);
+  const { song: selectedSong } = pickSong(songs, history);
 
   if (!selectedSong) {
     console.warn('No pop songs available in database to schedule a puzzle!');

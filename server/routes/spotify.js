@@ -1,4 +1,5 @@
 import express from 'express';
+import { pickSong, parseSongIds } from '../services/randomSongs.js';
 import db from '../db/db.js';
 import { parseSpotifyPlaylist } from '../services/spotifyClient.js';
 import { fetchTrackMetadata } from '../services/deezerClient.js';
@@ -143,16 +144,6 @@ router.post('/spotify/import', async (req, res) => {
   }
 });
 
-// Fisher-Yates shuffle helper for true random distribution
-function shuffleArray(array) {
-  const arr = [...array];
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
 // GET puzzle from imported Spotify playlist song IDs (excluding previously played song IDs in session)
 router.get('/puzzle/spotify', async (req, res) => {
   try {
@@ -163,30 +154,11 @@ router.get('/puzzle/spotify', async (req, res) => {
       return res.status(400).json({ error: 'songIds parameter is required' });
     }
 
-    const ids = Array.from(new Set(rawIds.split(',').map(Number).filter(Boolean)));
-    const excludeList = rawExclude.split(',').map(Number).filter(Boolean);
-    const excludeIds = new Set(excludeList);
-    const lastPlayedId = excludeList.length > 0 ? excludeList[excludeList.length - 1] : null;
-
-    if (!ids.length) {
-      return res.status(400).json({ error: 'Invalid songIds' });
-    }
-
-    // Filter available candidate IDs by excluding previously played IDs
-    let candidateIds = ids.filter(id => !excludeIds.has(id));
-    let historyReset = false;
-
-    if (!candidateIds.length) {
-      // All songs in playlist played, auto-reset session candidates
-      // Exclude last played song if playlist has > 1 song to prevent back-to-back repeats
-      candidateIds = ids.length > 1 && lastPlayedId ? ids.filter(id => id !== lastPlayedId) : ids;
-      historyReset = true;
-    }
-
-    // Shuffle candidates with Fisher-Yates for uniform randomness
-    const shuffledCandidates = shuffleArray(candidateIds);
-    const randomId = shuffledCandidates[0];
-    const song = db.prepare('SELECT id, title, artist, preview_url FROM songs WHERE id = ?').get(randomId);
+    const ids = [...new Set(parseSongIds(rawIds))];
+    if (!ids.length) return res.status(400).json({ error: 'Invalid songIds' });
+    const placeholders = ids.map(() => '?').join(',');
+    const songs = db.prepare(`SELECT id, title, artist, preview_url FROM songs WHERE id IN (${placeholders})`).all(...ids);
+    const { song, historyReset } = pickSong(songs, parseSongIds(rawExclude));
 
     if (!song) {
       return res.status(404).json({ error: 'Selected song not found in database' });
