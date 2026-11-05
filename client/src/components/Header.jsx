@@ -33,8 +33,8 @@ export default function Header({
       <div className="logo-group">
         <AudioLines className="studio-logo" size={32} />
         <div>
-          <h1 className="app-title">MIDNIGHT STUDIO</h1>
-          <p className="brand-caption">SONG GUESSER</p>
+          <h1 className="app-title">Midnight Studio</h1>
+          <p className="brand-caption">Song Guesser</p>
         </div>
       </div>
       <nav className="nav-actions" aria-label="Your game">

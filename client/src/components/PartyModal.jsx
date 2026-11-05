@@ -54,7 +54,7 @@ export default function PartyModal({ onCreateParty, onJoinParty, onClose }) {
       <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Party" className="modal-card" style={{ maxWidth: 460 }}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Users size={24} color="#c5f74a" />
+            <Users size={24} color="#0a84ff" />
             <h2 className="modal-title">Party Versus Mode</h2>
           </div>
           <button className="close-btn" aria-label="Close dialog" onClick={onClose}>
@@ -81,8 +81,8 @@ export default function PartyModal({ onCreateParty, onJoinParty, onClose }) {
               fontSize: '0.85rem',
               fontWeight: 700,
               cursor: 'pointer',
-              background: activeTab === 'join' ? 'linear-gradient(135deg, #c5f74a, #a5d637)' : 'transparent',
-              color: activeTab === 'join' ? '#172107' : 'var(--text-muted)',
+              background: activeTab === 'join' ? 'linear-gradient(135deg, #0a84ff, #0071e3)' : 'transparent',
+              color: activeTab === 'join' ? '#ffffff' : 'var(--text-muted)',
               transition: 'all 0.2s ease'
             }}
           >
@@ -99,8 +99,8 @@ export default function PartyModal({ onCreateParty, onJoinParty, onClose }) {
               fontSize: '0.85rem',
               fontWeight: 700,
               cursor: 'pointer',
-              background: activeTab === 'create' ? 'linear-gradient(135deg, #c5f74a, #a5d637)' : 'transparent',
-              color: activeTab === 'create' ? '#172107' : 'var(--text-muted)',
+              background: activeTab === 'create' ? 'linear-gradient(135deg, #0a84ff, #0071e3)' : 'transparent',
+              color: activeTab === 'create' ? '#ffffff' : 'var(--text-muted)',
               transition: 'all 0.2s ease'
             }}
           >
@@ -155,7 +155,7 @@ export default function PartyModal({ onCreateParty, onJoinParty, onClose }) {
               className="btn-submit"
               disabled={loading || joinCode.length < 4}
               style={{
-                background: 'linear-gradient(135deg, #c5f74a, #a5d637)',
+                background: 'linear-gradient(135deg, #0a84ff, #0071e3)',
                 padding: '12px 0',
                 display: 'flex',
                 alignItems: 'center',
@@ -176,7 +176,7 @@ export default function PartyModal({ onCreateParty, onJoinParty, onClose }) {
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: '0.85rem' }}>
                 <label style={{ fontWeight: 600 }}>Number of Rounds</label>
-                <span style={{ fontWeight: 800, color: '#c5f74a' }}>{numRounds} songs</span>
+                <span style={{ fontWeight: 800, color: '#0a84ff' }}>{numRounds} songs</span>
               </div>
               <input
                 type="range"
@@ -204,8 +204,8 @@ export default function PartyModal({ onCreateParty, onJoinParty, onClose }) {
                     gap: 6,
                     padding: '10px',
                     borderRadius: 10,
-                    border: songSource === 'random' ? '2px solid #c5f74a' : '1px solid rgba(255,255,255,0.1)',
-                    background: songSource === 'random' ? 'rgba(197, 247, 74, 0.2)' : 'rgba(255,255,255,0.04)',
+                    border: songSource === 'random' ? '2px solid #0a84ff' : '1px solid rgba(255,255,255,0.1)',
+                    background: songSource === 'random' ? 'rgba(10, 132, 255, 0.2)' : 'rgba(255,255,255,0.04)',
                     color: '#fff',
                     fontWeight: 600,
                     cursor: 'pointer'
@@ -261,7 +261,7 @@ export default function PartyModal({ onCreateParty, onJoinParty, onClose }) {
               className="btn-submit"
               disabled={loading || (songSource === 'spotify' && !playlistUrl.trim())}
               style={{
-                background: 'linear-gradient(135deg, #c5f74a, #a5d637)',
+                background: 'linear-gradient(135deg, #0a84ff, #0071e3)',
                 padding: '12px 0',
                 display: 'flex',
                 alignItems: 'center',

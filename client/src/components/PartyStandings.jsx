@@ -39,8 +39,8 @@ export default function PartyStandings({ partyState, anonId, apiBaseUrl = '', on
       {pollError && <p role="alert">{pollError}</p>}
       {/* Title Header Card */}
       <div style={{
-        background: 'linear-gradient(135deg, rgba(197, 247, 74, 0.2), rgba(197, 247, 74, 0.2))',
-        border: '1px solid rgba(197, 247, 74, 0.4)',
+        background: 'linear-gradient(135deg, rgba(10, 132, 255, 0.2), rgba(10, 132, 255, 0.2))',
+        border: '1px solid rgba(10, 132, 255, 0.4)',
         borderRadius: 24,
         padding: '24px 20px 20px',
         textAlign: 'center',
@@ -190,7 +190,7 @@ export default function PartyStandings({ partyState, anonId, apiBaseUrl = '', on
           <div>
             <h3 style={{ fontSize: '0.95rem', fontWeight: 700 }}>Full Party Standings</h3>
             {hasUnfinishedPlayers && (
-              <span style={{ fontSize: '0.72rem', color: '#c5f74a', fontWeight: 600 }}>
+              <span style={{ fontSize: '0.72rem', color: '#0a84ff', fontWeight: 600 }}>
                 • Auto-syncing live scores...
               </span>
             )}
@@ -203,9 +203,9 @@ export default function PartyStandings({ partyState, anonId, apiBaseUrl = '', on
             style={{
               padding: '6px 12px',
               borderRadius: 10,
-              background: 'rgba(197, 247, 74, 0.12)',
-              border: '1px solid rgba(197, 247, 74, 0.3)',
-              color: '#c5f74a',
+              background: 'rgba(10, 132, 255, 0.12)',
+              border: '1px solid rgba(10, 132, 255, 0.3)',
+              color: '#0a84ff',
               fontSize: '0.78rem',
               fontWeight: 700,
               cursor: refreshing ? 'default' : 'pointer',
@@ -234,8 +234,8 @@ export default function PartyStandings({ partyState, anonId, apiBaseUrl = '', on
                 justifyContent: 'space-between',
                 padding: '10px 14px',
                 borderRadius: 12,
-                background: isMe ? 'rgba(197, 247, 74, 0.15)' : 'rgba(255, 255, 255, 0.04)',
-                border: isMe ? '1px solid rgba(197, 247, 74, 0.4)' : '1px solid rgba(255, 255, 255, 0.05)'
+                background: isMe ? 'rgba(10, 132, 255, 0.15)' : 'rgba(255, 255, 255, 0.04)',
+                border: isMe ? '1px solid rgba(10, 132, 255, 0.4)' : '1px solid rgba(255, 255, 255, 0.05)'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -257,7 +257,7 @@ export default function PartyStandings({ partyState, anonId, apiBaseUrl = '', on
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#fff' }}>{s.displayName}</span>
-                    {isMe && <span style={{ fontSize: '0.65rem', background: '#c5f74a', color: '#fff', padding: '1px 6px', borderRadius: 10, fontWeight: 700 }}>YOU</span>}
+                    {isMe && <span style={{ fontSize: '0.65rem', background: '#0a84ff', color: '#fff', padding: '1px 6px', borderRadius: 10, fontWeight: 700 }}>YOU</span>}
                   </div>
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     {s.roundsCompleted} of {totalRounds} rounds completed
@@ -278,7 +278,7 @@ export default function PartyStandings({ partyState, anonId, apiBaseUrl = '', on
         <button
           className="share-btn"
           onClick={handleCopyShare}
-          style={{ flex: 1, background: 'linear-gradient(135deg, #c5f74a, #a5d637)', marginTop: 0 }}
+          style={{ flex: 1, background: 'linear-gradient(135deg, #0a84ff, #0071e3)', marginTop: 0 }}
         >
           {copied ? <Check size={18} /> : <Share2 size={18} />}
           <span>{copied ? 'Copied Results!' : 'Share Results'}</span>

@@ -154,7 +154,7 @@ export default function SearchAutocomplete({ onMakeGuess, onSkip, disabled, apiB
           disabled={disabled}
         >
           <FastForward size={16} style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }} />
-          SKIP
+          Skip
         </button>
 
         <button
@@ -164,7 +164,7 @@ export default function SearchAutocomplete({ onMakeGuess, onSkip, disabled, apiB
           disabled={disabled || !selectedSong}
         >
           <CheckCircle size={18} style={{ display: 'inline', marginRight: 6, verticalAlign: 'middle' }} />
-          SUBMIT
+          Submit
         </button>
       </div>
     </div>

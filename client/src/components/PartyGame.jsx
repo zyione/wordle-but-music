@@ -38,7 +38,7 @@ export default function PartyGame({ partyState, anonId, apiBaseUrl, onStateUpdat
   if (loading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 16 }}>
-        <Loader2 size={32} style={{ animation: 'spin 1.2s linear infinite', color: '#c5f74a' }} />
+        <Loader2 size={32} style={{ animation: 'spin 1.2s linear infinite', color: '#0a84ff' }} />
         <p style={{ color: 'var(--text-muted)', fontWeight: 600 }}>
           Loading Round {currentRound} of {totalRounds}...
         </p>
@@ -65,19 +65,19 @@ export default function PartyGame({ partyState, anonId, apiBaseUrl, onStateUpdat
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        background: 'rgba(197, 247, 74, 0.12)',
-        border: '1px solid rgba(197, 247, 74, 0.3)',
+        background: 'rgba(10, 132, 255, 0.12)',
+        border: '1px solid rgba(10, 132, 255, 0.3)',
         borderRadius: 14,
         padding: '8px 16px',
         margin: '12px 16px 0 16px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Trophy size={18} color="#c5f74a" />
+          <Trophy size={18} color="#0a84ff" />
           <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#fff' }}>
             Round {currentRound} of {totalRounds}
           </span>
         </div>
-        <span style={{ fontSize: '0.78rem', color: '#c5f74a', fontWeight: 700 }}>
+        <span style={{ fontSize: '0.78rem', color: '#0a84ff', fontWeight: 700 }}>
           Code: {partyState?.code}
         </span>
       </div>
@@ -131,7 +131,7 @@ export default function PartyGame({ partyState, anonId, apiBaseUrl, onStateUpdat
               onClick={handleNextRound}
               style={{
                 width: '100%',
-                background: 'linear-gradient(135deg, #c5f74a, #a5d637)',
+                background: 'linear-gradient(135deg, #0a84ff, #0071e3)',
                 padding: '14px 24px',
                 borderRadius: 16,
                 fontSize: '1rem',
@@ -140,7 +140,7 @@ export default function PartyGame({ partyState, anonId, apiBaseUrl, onStateUpdat
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 10,
-                boxShadow: '0 8px 25px rgba(197, 247, 74, 0.4)'
+                boxShadow: '0 8px 25px rgba(10, 132, 255, 0.4)'
               }}
             >
               <span>Next Round ({currentRound + 1} / {totalRounds})</span>
@@ -152,7 +152,7 @@ export default function PartyGame({ partyState, anonId, apiBaseUrl, onStateUpdat
               onClick={() => setShowFinalStandings(true)}
               style={{
                 width: '100%',
-                background: 'linear-gradient(135deg, #f59e0b, #c5f74a)',
+                background: 'linear-gradient(135deg, #f59e0b, #0a84ff)',
                 padding: '14px 24px',
                 borderRadius: 16,
                 fontSize: '1rem',

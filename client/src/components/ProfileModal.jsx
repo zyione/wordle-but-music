@@ -173,7 +173,7 @@ export default function ProfileModal({ userProfile, apiBaseUrl = '', anonId = ''
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 10,
-                background: 'linear-gradient(135deg, #c5f74a, #a5d637)',
+                background: 'linear-gradient(135deg, #0a84ff, #0071e3)',
                 fontWeight: 800,
                 fontSize: '1rem'
               }}

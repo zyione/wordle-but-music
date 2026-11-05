@@ -103,7 +103,6 @@ export default function SpotifyModal({ onSelectCached, onStartImport, onClose })
                 {cachedPlaylists.map((pl) => (
                   <div
                     key={pl.playlistId}
-                    onClick={() => handleSelectCachedItem(pl)}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -118,7 +117,7 @@ export default function SpotifyModal({ onSelectCached, onStartImport, onClose })
                     onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(29, 185, 84, 0.12)'}
                     onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)'}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflow: 'hidden' }}>
+                    <button type="button" onClick={() => handleSelectCachedItem(pl)} style={{ display: 'flex', alignItems: 'center', gap: 10, overflow: 'hidden', flex: 1, textAlign: 'left', color: 'inherit', background: 'transparent', border: 0, minHeight: 44 }}>
                       <div style={{ width: 32, height: 32, borderRadius: 6, background: '#1db954', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
                         <Play size={16} fill="#fff" />
                       </div>
@@ -130,7 +129,7 @@ export default function SpotifyModal({ onSelectCached, onStartImport, onClose })
                           {pl.importedTracksCount || pl.songIds?.length} songs available
                         </span>
                       </div>
-                    </div>
+                    </button>
 
                     <button
                       onClick={(e) => handleDeleteCached(e, pl.playlistId)}

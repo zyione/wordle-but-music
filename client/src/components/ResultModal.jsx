@@ -54,7 +54,7 @@ export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate,
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {isSolved ? <Trophy size={24} color="var(--accent-primary)" /> : <Music size={24} color="#ef4444" />}
             <h2 className="modal-title">
-              {isSolved ? 'CORRECT!' : 'THE SONG WAS…'}
+              {isSolved ? 'You got it!' : 'The song was…'}
             </h2>
           </div>
           <button className="close-btn" aria-label="Close dialog" onClick={onClose}>
@@ -166,7 +166,7 @@ export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate,
           </div>
 
           {audioError && <p className="audio-error" role="status">Preview unavailable. Press play to retry.</p>}
-          <div className="result-summary"><div><strong>{isSolved ? guesses.length : 'X'} / 6</strong><span>ATTEMPTS</span></div><div><strong>{gameScore.toLocaleString()}<small> pts</small></strong><span>SCORE</span></div></div>
+          <div className="result-summary"><div><strong>{isSolved ? guesses.length : 'X'} / 6</strong><span>Attempts</span></div><div><strong>{gameScore.toLocaleString()}<small> pts</small></strong><span>Score</span></div></div>
           <div className="share-grid-box">
             {guesses.map((g, i) => (
               <span key={i}>
@@ -184,7 +184,7 @@ export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate,
               className="share-btn"
               onClick={onPlayNextUnlimited}
               style={{
-                background: gameMode === 'spotify' ? 'linear-gradient(135deg, #1db954, #059669)' : 'linear-gradient(135deg, #c5f74a, #a5d637)',
+                background: gameMode === 'spotify' ? 'linear-gradient(135deg, #1db954, #059669)' : 'linear-gradient(135deg, #0a84ff, #0071e3)',
                 boxShadow: gameMode === 'spotify' ? '0 4px 15px rgba(29, 185, 84, 0.3)' : '0 4px 15px rgba(236, 72, 153, 0.3)'
               }}
             >

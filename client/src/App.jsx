@@ -295,7 +295,7 @@ export default function App() {
                   className="share-btn"
                   onClick={handlePlayNextRandom}
                   style={{
-                    background: gameMode === 'spotify' ? 'linear-gradient(135deg, #1db954, #059669)' : 'linear-gradient(135deg, #c5f74a, #a5d637)',
+                    background: gameMode === 'spotify' ? 'linear-gradient(135deg, #1db954, #059669)' : 'linear-gradient(135deg, #0a84ff, #0071e3)',
                     boxShadow: '0 4px 15px rgba(29, 185, 84, 0.3)'
                   }}
                 >
@@ -306,7 +306,7 @@ export default function App() {
               <button
                 className="share-btn"
                 onClick={() => setShowResult(true)}
-                style={{ background: gameMode !== 'daily' ? 'rgba(255, 255, 255, 0.08)' : 'var(--accent-primary)', color: gameMode !== 'daily' ? 'var(--text-main)' : '#172107' }}
+                style={{ background: gameMode !== 'daily' ? 'rgba(255, 255, 255, 0.08)' : 'var(--accent-primary)', color: gameMode !== 'daily' ? 'var(--text-main)' : '#ffffff' }}
               >
                 Show Result & Share
               </button>

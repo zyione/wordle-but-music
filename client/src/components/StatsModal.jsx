@@ -32,7 +32,7 @@ export default function StatsModal({ onClose }) {
         {error && <p role="alert">{error}</p>}
         {!stats && !error && <p role="status">Loading statistics…</p>}
         <p className="duration-hint">Daily challenges only · a new day starts at 00:00 UTC.</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, textAlign: 'center' }}>
+        <div className="stats-grid">
           <div style={{ background: 'rgba(255,255,255,0.05)', padding: 12, borderRadius: 12 }}>
             <h3 style={{ fontSize: '1.6rem', color: '#fff' }}>{played}</h3>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Played</span>

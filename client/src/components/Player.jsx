@@ -80,13 +80,13 @@ export default function Player({
       <div className="listening-heading">
         <h2>
           {isGameOver
-            ? "THE FULL REVEAL"
-            : `${isPlaying ? "LISTENING" : "LISTEN FOR"} ${activeMaxMs / 1000} ${activeMaxMs === 1000 ? "SECOND" : "SECONDS"}`}
+            ? "Your song, revealed"
+            : `${isPlaying ? "Listening for" : "Listen for"} ${activeMaxMs / 1000} ${activeMaxMs === 1000 ? "second" : "seconds"}`}
         </h2>
         <p>
           {isGameOver
             ? "Replay the song. Find your next favorite."
-            : `GUESS THE SONG · ${guessDurationsMs.length} ATTEMPTS`}
+            : `Guess the song · ${guessDurationsMs.length} attempts`}
         </p>
       </div>
       <div className="duration-steps" aria-label="Snippet duration">

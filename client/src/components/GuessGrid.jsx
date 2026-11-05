@@ -13,7 +13,7 @@ export default function GuessGrid({
   return (
     <section className="attempts-section" aria-label="Attempt history">
       <div className="attempts-heading">
-        <h2>ATTEMPTS</h2>
+        <h2>Attempts</h2>
         <span>
           {guesses.length} / {maxGuesses}
         </span>
