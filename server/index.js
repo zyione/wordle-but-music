@@ -48,8 +48,7 @@ app.use(cors({
     if (!origin) return callback(null, true);
 
     const cleanReqOrigin = cleanOriginStr(origin);
-    const isAllowed = staticAllowed.some((allowed) => allowed === cleanReqOrigin) ||
-      cleanReqOrigin.endsWith('.vercel.app'); // Allow any Vercel preview domain
+    const isAllowed = staticAllowed.some((allowed) => allowed === cleanReqOrigin);
 
     if (isAllowed) {
       return callback(null, true);

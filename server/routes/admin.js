@@ -1,10 +1,12 @@
 import express from 'express';
+import { requireAdmin } from '../middleware/adminAuth.js';
 import db from '../db/db.js';
 import { fetchTrackMetadata } from '../services/deezerClient.js';
 import { resetToday } from '../db/resetToday.js';
 import { resetAll } from '../db/resetAll.js';
 
 const router = express.Router();
+router.use('/admin', requireAdmin);
 
 // GET all songs
 router.get('/admin/songs', (req, res) => {
