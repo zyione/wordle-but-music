@@ -106,3 +106,12 @@ Click **Deploy**! Your frontend will be live at `https://your-project.vercel.app
 - [ ] Test Unlimited Mode → Verify non-repeating song selection works across sessions.
 - [ ] Test Spotify Mode → Import a Spotify playlist URL and verify live background stream.
 - [ ] Set up UptimeRobot ping to `/health` to prevent server cold starts.
+
+
+## Persistence and server requirements
+
+Use Node.js 22.16 or newer. The server now uses native SQLite with WAL and atomic transactions; see the [Node SQLite documentation](https://nodejs.org/api/sqlite.html). Keep `DB_PATH` on a persistent volume for the strongest durability.
+
+Optional Supabase backups require a server service-role key (`SUPABASE_SERVICE_ROLE_KEY`, or the legacy `SUPABASE_KEY` if it contains that role). The `database` bucket is made private before startup. Backups run at most every 15 seconds and are awaited on graceful shutdown. Only restore when no local database exists. An abrupt loss of an ephemeral disk can lose changes since the last successful backup. Run a single server instance per database; these snapshots are disaster recovery, not multi-server synchronization. Use a shared transactional database before scaling to multiple instances.
+
+Set `ADMIN_TOKEN` to a strong random value to enable administrative API calls. Requests require `Authorization: Bearer <ADMIN_TOKEN>`; otherwise administrative routes remain disabled. Never put this token in frontend environment variables.

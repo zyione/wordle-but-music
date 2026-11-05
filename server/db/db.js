@@ -1,149 +1,87 @@
-import initSqlJs from 'sql.js';
-import fs from 'fs';
-import path from 'path';
+import { DatabaseSync, backup } from 'node:sqlite';
+import fs from 'node:fs';
+import path from 'node:path';
 import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
+const directory = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(directory, '../.env') });
+const resolvedPath = path.resolve(directory, '..', process.env.DB_PATH || './data/songs.db');
+fs.mkdirSync(path.dirname(resolvedPath), { recursive: true });
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
-
-const dbPath = process.env.DB_PATH || './data/songs.db';
-const resolvedPath = path.resolve(__dirname, '..', dbPath);
-
-const dbDir = path.dirname(resolvedPath);
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
-}
-
-// Supabase client instance setup
-const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-
-export const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
-
-// Download remote persistent database from Supabase Cloud on boot if configured
+// Backups are server-only. Never use browser/anonymous Supabase credentials.
+const url = process.env.SUPABASE_URL;
+const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY;
+export const supabase = process.env.DISABLE_CLOUD_BACKUP === '1' ? null : url && key ? createClient(url, key, { auth: { persistSession: false } }) : null;
 if (supabase) {
-  try {
-    const { data: buckets } = await supabase.storage.listBuckets();
-    if (!buckets?.some(b => b.name === 'database')) {
-      await supabase.storage.createBucket('database', { public: true });
-    }
-
-    const { data, error } = await supabase.storage.from('database').download('songs.db');
-    if (data && !error) {
-      const arrayBuffer = await data.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      fs.writeFileSync(resolvedPath, buffer);
-      console.log('☁️ Successfully restored persistent database from Supabase Cloud!');
-    } else {
-      console.log('☁️ No remote database found in Supabase Cloud yet. Starting fresh instance.');
-    }
-  } catch (err) {
-    console.warn('☁️ Supabase Cloud boot download warning:', err.message);
+  const { data: buckets, error } = await supabase.storage.listBuckets();
+  if (error) throw new Error('Private database backup requires a Supabase service-role key');
+  const existing = buckets.find(b => b.name === 'database');
+  const result = existing ? await supabase.storage.updateBucket('database', { public: false }) : await supabase.storage.createBucket('database', { public: false });
+  if (result.error) throw new Error('Unable to secure database backup bucket');
+  if (!fs.existsSync(resolvedPath)) {
+    const { data, error: downloadError } = await supabase.storage.from('database').download('songs.db');
+    if (data) fs.writeFileSync(resolvedPath, Buffer.from(await data.arrayBuffer()));
+    else if (downloadError && !['404', '400'].includes(String(downloadError.statusCode)) && !/not found/i.test(downloadError.message)) throw new Error('Unable to restore database backup safely');
   }
 }
 
-const SQL = await initSqlJs();
+const sqlite = new DatabaseSync(resolvedPath);
+// Keep the legacy schema compatible; new game writes use explicit transactions.
+sqlite.exec('PRAGMA journal_mode = WAL; PRAGMA synchronous = FULL; PRAGMA busy_timeout = 5000;');
+let dirty = false;
+let transactionDepth = 0;
+let syncing = null;
 
-let dbInstance;
-if (fs.existsSync(resolvedPath)) {
-  const filebuffer = fs.readFileSync(resolvedPath);
-  dbInstance = new SQL.Database(filebuffer);
-} else {
-  dbInstance = new SQL.Database();
-}
-
-let syncTimer = null;
-function syncToSupabase() {
+export async function flushBackup() {
   if (!supabase) return;
-  if (syncTimer) clearTimeout(syncTimer);
-  syncTimer = setTimeout(async () => {
+  if (syncing) { await syncing; if (!dirty) return; }
+  if (!dirty) return;
+  dirty = false;
+  syncing = (async () => {
+    const snapshot = `${resolvedPath}.backup`;
     try {
-      if (!fs.existsSync(resolvedPath)) return;
-      const fileBuffer = fs.readFileSync(resolvedPath);
-      const { error } = await supabase.storage.from('database').upload('songs.db', fileBuffer, {
-        upsert: true,
-        contentType: 'application/x-sqlite3'
-      });
-      if (error) {
-        console.warn('☁️ Supabase sync warning:', error.message);
-      } else {
-        console.log('☁️ Database synced to Supabase Cloud Storage.');
-      }
-    } catch (err) {
-      console.warn('☁️ Supabase sync error:', err.message);
-    }
-  }, 1500);
+      await backup(sqlite, snapshot);
+      const { error } = await supabase.storage.from('database').upload('songs.db', fs.readFileSync(snapshot), { upsert: true, contentType: 'application/x-sqlite3' });
+      if (error) throw error;
+    } catch (error) { dirty = true; console.error('Database backup failed:', error.message); }
+    finally { if (fs.existsSync(snapshot)) fs.unlinkSync(snapshot); }
+  })();
+  try { await syncing; } finally { syncing = null; }
 }
+const timer = setInterval(() => { flushBackup(); }, 15000);
+timer.unref();
 
-function saveDb() {
-  try {
-    const data = dbInstance.export();
-    const buffer = Buffer.from(data);
-    fs.writeFileSync(resolvedPath, buffer);
-    syncToSupabase();
-  } catch (err) {
-    console.error('Error saving SQLite database file:', err);
-  }
-}
-
-// Clean wrapper mimicking better-sqlite3 API for local & test environments
+const params = args => (args.length === 1 && Array.isArray(args[0]) ? args[0] : args).map(v => v === undefined ? null : v);
 const db = {
-  exec: (sql) => {
-    dbInstance.exec(sql);
-    saveDb();
-  },
-  prepare: (sql) => {
+  exec(sql) { sqlite.exec(sql); dirty = true; },
+  prepare(sql) {
+    const statement = sqlite.prepare(sql);
     return {
-      run: (...args) => {
-        let params = args;
-        if (args.length === 1 && Array.isArray(args[0])) params = args[0];
-        dbInstance.run(sql, params);
-        saveDb();
-        const res = dbInstance.exec('SELECT last_insert_rowid() as id');
-        const lastInsertRowid = res[0] && res[0].values && res[0].values[0] ? res[0].values[0][0] : 0;
-        return { lastInsertRowid };
-      },
-      get: (...args) => {
-        let params = args;
-        if (args.length === 1 && Array.isArray(args[0])) params = args[0];
-        const stmt = dbInstance.prepare(sql);
-        stmt.bind(params);
-        if (stmt.step()) {
-          const row = stmt.getAsObject();
-          stmt.free();
-          return row;
-        }
-        stmt.free();
-        return undefined;
-      },
-      all: (...args) => {
-        let params = args;
-        if (args.length === 1 && Array.isArray(args[0])) params = args[0];
-        const stmt = dbInstance.prepare(sql);
-        stmt.bind(params);
-        const rows = [];
-        while (stmt.step()) {
-          rows.push(stmt.getAsObject());
-        }
-        stmt.free();
-        return rows;
-      }
+      run(...args) { const result = statement.run(...params(args)); dirty = true; return { changes: Number(result.changes), lastInsertRowid: Number(result.lastInsertRowid) }; },
+      get(...args) { const result = statement.get(...params(args)); if (/^\s*(INSERT|UPDATE|DELETE)/i.test(sql)) dirty = true; return result; },
+      all(...args) { return statement.all(...params(args)); },
     };
-  }
+  },
+  transaction(fn) {
+    if (transactionDepth) return fn();
+    sqlite.exec('BEGIN IMMEDIATE');
+    transactionDepth++;
+    try {
+      const result = fn();
+      if (result && typeof result.then === 'function') throw new Error('Database transactions must be synchronous');
+      sqlite.exec('COMMIT'); dirty = true;
+      return result;
+    } catch (error) { sqlite.exec('ROLLBACK'); throw error; }
+    finally { transactionDepth--; }
+  },
+  async close() { clearInterval(timer); await flushBackup(); sqlite.close(); },
 };
-
-// Sync on process termination (e.g., Render container shutdown)
-process.on('SIGINT', () => {
-  saveDb();
+let stopping = false;
+for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, async () => {
+  if (stopping) return;
+  stopping = true;
+  await db.close();
   process.exit(0);
 });
-process.on('SIGTERM', () => {
-  saveDb();
-  process.exit(0);
-});
-
 export default db;

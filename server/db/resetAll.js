@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 export function resetAll({ keepUsers = true } = {}) {
   console.log('Resetting all game play history & attempts (preserving table structures and songs database)...');
 
+  db.transaction(() => {
   db.exec('DELETE FROM guesses');
   db.exec('DELETE FROM attempts');
   db.exec('DELETE FROM puzzles');
@@ -18,6 +19,7 @@ export function resetAll({ keepUsers = true } = {}) {
     console.log('Cleared user profiles table.');
   }
 
+  });
   console.log('Game history successfully reset.');
 
   // Re-schedule today's puzzle
