@@ -1,4 +1,5 @@
 import express from 'express';
+import { summarizeDaily } from '../services/statistics.js';
 import db from '../db/db.js';
 import { hashPin, verifyPin } from '../services/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
@@ -54,5 +55,10 @@ router.post('/users/profile', rateLimit({ limit: 30 }), rateLimit({ limit: 5, ke
 router.get('/users/profile', (req, res) => {
   const user = db.prepare('SELECT * FROM users WHERE anon_id = ?').get(req.identity);
   res.set('Cache-Control', 'no-store').json({ profile: user ? format(user) : null });
+});
+router.get('/users/stats', (req, res) => {
+  const daily = db.prepare('SELECT p.puzzle_date AS puzzleDate, a.is_solved AS isSolved FROM attempts a JOIN sessions s ON s.id = a.session_id JOIN puzzles p ON p.id = a.puzzle_id WHERE s.anon_id = ? AND a.completed_at IS NOT NULL ORDER BY p.puzzle_date').all(req.identity);
+  const practice = db.prepare("SELECT COUNT(*) AS played, COALESCE(SUM(is_solved), 0) AS won FROM game_runs WHERE owner_id = ? AND mode IN ('unlimited', 'spotify') AND completed_at IS NOT NULL").get(req.identity);
+  res.set('Cache-Control', 'no-store').json({ ...summarizeDaily(daily), practice });
 });
 export default router;

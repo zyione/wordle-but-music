@@ -20,27 +20,6 @@ import { Shuffle, Loader2, CheckCircle2 } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 
-function getLocalStats() {
-  try {
-    const raw = localStorage.getItem('song_guesser_stats');
-    return raw ? JSON.parse(raw) : { played: 0, won: 0, currentStreak: 0, maxStreak: 0 };
-  } catch {
-    return { played: 0, won: 0, currentStreak: 0, maxStreak: 0 };
-  }
-}
-
-function saveLocalStats(isWin) {
-  const current = getLocalStats();
-  const played = current.played + 1;
-  const won = current.won + (isWin ? 1 : 0);
-  const currentStreak = isWin ? current.currentStreak + 1 : 0;
-  const maxStreak = Math.max(current.maxStreak, currentStreak);
-
-  const updated = { played, won, currentStreak, maxStreak };
-  localStorage.setItem('song_guesser_stats', JSON.stringify(updated));
-  return updated;
-}
-
 export default function App() {
   const [gameMode, setGameMode] = useState('daily'); // 'daily' | 'unlimited' | 'spotify' | 'party'
   const [spotifyPlaylist, setSpotifyPlaylist] = useState(null);
@@ -58,10 +37,9 @@ export default function App() {
 
   const [showHelp, setShowHelp] = useState(false);
   const [showStats, setShowStats] = useState(false);
-  const [stats, setStats] = useState(getLocalStats());
   const [anonId, setAnonId] = useState(null);
   const [sessionError, setSessionError] = useState(null);
-  const game = useGameRound({ apiBaseUrl: API_BASE_URL, mode: gameMode, anonId, playlistSongIds: spotifyPlaylist?.songIds, onCompleted: data => setStats(saveLocalStats(data.isSolved)) });
+  const game = useGameRound({ apiBaseUrl: API_BASE_URL, mode: gameMode, anonId, playlistSongIds: spotifyPlaylist?.songIds });
   const { puzzleData, guesses, isGameOver, isSolved, targetSong, gameScore, showResult, setShowResult, handleMakeGuess, handleSkip, handleSelectStep, isSubmitting, submissionError, loadPuzzle: fetchPuzzle } = game;
   const error = sessionError || game.error;
   const loading = !sessionError && game.loading;
@@ -504,7 +482,7 @@ export default function App() {
 
       {/* MODALS */}
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
-      {showStats && <StatsModal stats={stats} onClose={() => setShowStats(false)} />}
+      {showStats && <StatsModal onClose={() => setShowStats(false)} />}
       {showProfileModal && (
         <ProfileModal
           userProfile={userProfile}
