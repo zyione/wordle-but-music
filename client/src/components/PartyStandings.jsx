@@ -1,3 +1,4 @@
+import usePartyPolling from '../hooks/usePartyPolling.js';
 import { apiFetch as fetch } from '../lib/api.js';
 import React, { useState, useEffect } from 'react';
 import { Trophy, Award, Medal, Share2, LogOut, Check, RefreshCw } from 'lucide-react';
@@ -16,35 +17,11 @@ export default function PartyStandings({ partyState, anonId, apiBaseUrl = '', on
 
   const hasUnfinishedPlayers = standings.some(s => s.roundsCompleted < totalRounds);
 
-  // Manual Refresh Handler
+  const { refresh, error: pollError } = usePartyPolling({ code: partyState?.code, apiBaseUrl, onStateUpdate, enabled: hasUnfinishedPlayers });
   const handleRefreshStandings = async () => {
-    if (!partyState?.code) return;
-    try {
-      setRefreshing(true);
-      const baseUrl = apiBaseUrl || (typeof window !== 'undefined' ? window.location.origin : '');
-      const res = await fetch(`${baseUrl}/api/party/${partyState.code}`);
-      if (res.ok) {
-        const updatedState = await res.json();
-        onStateUpdate?.(updatedState);
-        setLastRefreshedText('Just now');
-      }
-    } catch (err) {
-      console.warn('Error refreshing party standings:', err);
-    } finally {
-      setTimeout(() => setRefreshing(false), 500);
-    }
+    setRefreshing(true);
+    try { await refresh(); setLastRefreshedText('Just now'); } finally { setRefreshing(false); }
   };
-
-  // Auto-poll live scores every 3 seconds while players are still finishing rounds
-  useEffect(() => {
-    if (!hasUnfinishedPlayers || !partyState?.code) return;
-
-    const interval = setInterval(() => {
-      handleRefreshStandings();
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [hasUnfinishedPlayers, partyState?.code]);
 
   const handleCopyShare = () => {
     const lines = [`🎉 Party Versus Results (Room: ${partyState?.code})`];
@@ -61,6 +38,7 @@ export default function PartyStandings({ partyState, anonId, apiBaseUrl = '', on
 
   return (
     <div style={{ maxWidth: 520, margin: '20px auto', padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {pollError && <p role="alert">{pollError}</p>}
       {/* Title Header Card */}
       <div style={{
         background: 'linear-gradient(135deg, rgba(197, 247, 74, 0.2), rgba(197, 247, 74, 0.2))',

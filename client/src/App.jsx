@@ -1,3 +1,4 @@
+import usePlaylistImport from './hooks/usePlaylistImport.js';
 import useGameRound from './hooks/useGameRound.js';
 import { getSession } from './lib/api.js';
 import { apiFetch as fetch } from './lib/api.js';
@@ -9,7 +10,7 @@ import SearchAutocomplete from './components/SearchAutocomplete.jsx';
 import ResultModal from './components/ResultModal.jsx';
 import HelpModal from './components/HelpModal.jsx';
 import StatsModal from './components/StatsModal.jsx';
-import SpotifyModal, { saveCachedPlaylist } from './components/SpotifyModal.jsx';
+import SpotifyModal from './components/SpotifyModal.jsx';
 import ProfileModal from './components/ProfileModal.jsx';
 import LeaderboardModal from './components/LeaderboardModal.jsx';
 import PartyModal from './components/PartyModal.jsx';
@@ -24,7 +25,6 @@ export default function App() {
   const [gameMode, setGameMode] = useState('daily'); // 'daily' | 'unlimited' | 'spotify' | 'party'
   const [spotifyPlaylist, setSpotifyPlaylist] = useState(null);
   const [showSpotifyModal, setShowSpotifyModal] = useState(false);
-  const [bgImportStatus, setBgImportStatus] = useState(null);
 
   // User profile & Modals
   const [userProfile, setUserProfile] = useState(null);
@@ -225,108 +225,15 @@ export default function App() {
     if (gameMode === 'spotify') fetchPuzzle('spotify', playlist.songIds);
   };
 
-  // Background stream importer
-  const handleStartImport = async (playlistUrl) => {
-    try {
-      setBgImportStatus({
-        isImporting: true,
-        playlistName: 'Spotify Playlist',
-        current: 0,
-        total: 50,
-        readyCount: 0,
-        isComplete: false
-      });
-
-      const response = await fetch(`${API_BASE_URL}/api/spotify/import`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playlistUrl })
-      });
-
-      if (!response.ok) throw new Error('Failed to import playlist');
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder('utf-8');
-      let buffer = '';
-      let hasLaunchedGame = false;
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop();
-
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          try {
-            const msg = JSON.parse(line);
-
-            if (msg.type === 'init') {
-              setBgImportStatus({
-                isImporting: true,
-                playlistName: msg.playlistName,
-                current: 0,
-                total: msg.total,
-                readyCount: 0,
-                isComplete: false
-              });
-            } else if (msg.type === 'progress' || msg.type === 'first_match') {
-              setBgImportStatus({
-                isImporting: true,
-                playlistName: msg.playlistName,
-                current: msg.current || 0,
-                total: msg.total || 50,
-                readyCount: msg.importedTracksCount,
-                isComplete: false
-              });
-
-              if (msg.songIds && msg.songIds.length > 0) {
-                const updatedPl = {
-                  playlistId: msg.playlistId,
-                  playlistName: msg.playlistName,
-                  importedTracksCount: msg.importedTracksCount,
-                  songIds: msg.songIds
-                };
-                setSpotifyPlaylist(updatedPl);
-
-                if (!hasLaunchedGame) {
-                  hasLaunchedGame = true;
-                  setGameMode('spotify');
-                                if (gameMode === 'spotify') fetchPuzzle('spotify', msg.songIds);
-                }
-              }
-            } else if (msg.type === 'complete') {
-              saveCachedPlaylist(msg);
-              setSpotifyPlaylist({
-                playlistId: msg.playlistId,
-                playlistName: msg.playlistName,
-                importedTracksCount: msg.importedTracksCount,
-                songIds: msg.songIds
-              });
-
-              setBgImportStatus({
-                isImporting: false,
-                playlistName: msg.playlistName,
-                current: msg.totalPlaylistTracks,
-                total: msg.totalPlaylistTracks,
-                readyCount: msg.importedTracksCount,
-                isComplete: true
-              });
-
-              setTimeout(() => setBgImportStatus(null), 3500);
-            }
-          } catch (lineErr) {
-            console.warn('Line parse error:', lineErr);
-          }
-        }
-      }
-    } catch (err) {
-      console.error('Import error:', err);
-      setBgImportStatus(null);
+  const playlistImport = usePlaylistImport((playlist, launch) => {
+    setSpotifyPlaylist(playlist);
+    if (launch) {
+      setGameMode('spotify');
+      if (gameMode === 'spotify') fetchPuzzle('spotify', playlist.songIds);
     }
-  };
+  });
+  const bgImportStatus = playlistImport.status;
+  const handleStartImport = playlistImport.start;
 
   const handlePlayNextRandom = () => {
     setShowResult(false);
@@ -442,6 +349,7 @@ export default function App() {
         </main>
       )}
 
+      {playlistImport.error && <p className="audio-error" role="alert">{playlistImport.error}</p>}
       {/* NON-INTRUSIVE BACKGROUND IMPORT STATUS BADGE */}
       {bgImportStatus && (
         <div style={{

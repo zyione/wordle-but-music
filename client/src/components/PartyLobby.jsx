@@ -1,3 +1,4 @@
+import usePartyPolling from '../hooks/usePartyPolling.js';
 import { apiFetch as fetch } from '../lib/api.js';
 import React, { useState, useEffect } from 'react';
 import { Copy, Check, Users, Play, Crown, Loader2, LogOut } from 'lucide-react';
@@ -9,24 +10,7 @@ export default function PartyLobby({ partyState, anonId, apiBaseUrl, onStartGame
   const members = partyState?.members || [];
   const maxPlayers = partyState?.maxPlayers || 10;
 
-  // Poll for party state updates every 2.5 seconds
-  useEffect(() => {
-    if (!partyState?.code) return;
-
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`${apiBaseUrl}/api/party/${partyState.code}?anonId=${anonId}`);
-        if (res.ok) {
-          const updated = await res.json();
-          onStateUpdate(updated);
-        }
-      } catch (err) {
-        console.warn('Lobby poll error:', err);
-      }
-    }, 2500);
-
-    return () => clearInterval(interval);
-  }, [partyState?.code, apiBaseUrl, anonId, onStateUpdate]);
+  const { error: pollError } = usePartyPolling({ code: partyState?.code, apiBaseUrl, onStateUpdate });
 
   const handleCopyCode = () => {
     if (!partyState?.code) return;
@@ -37,6 +21,7 @@ export default function PartyLobby({ partyState, anonId, apiBaseUrl, onStartGame
 
   return (
     <div style={{ maxWidth: 520, margin: '20px auto', padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {pollError && <p role="alert">{pollError}</p>}
       {/* Lobby Header Card */}
       <div style={{
         background: 'var(--bg-card)',
