@@ -1,3 +1,4 @@
+import useDialog from '../hooks/useDialog.js';
 import React, { useState } from 'react';
 import { X, Music2, AlertCircle, Play, Trash2, ListMusic } from 'lucide-react';
 
@@ -33,6 +34,7 @@ function deleteCachedPlaylist(playlistId) {
 }
 
 export default function SpotifyModal({ onSelectCached, onStartImport, onClose }) {
+  const dialogRef = useDialog(onClose);
   const [playlistUrl, setPlaylistUrl] = useState('');
   const [error, setError] = useState(null);
   const [cachedPlaylists, setCachedPlaylists] = useState(getCachedPlaylists());
@@ -60,13 +62,13 @@ export default function SpotifyModal({ onSelectCached, onStartImport, onClose })
 
   return (
     <div className="modal-overlay">
-      <div className="modal-card" style={{ maxWidth: 520 }}>
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Spotify" className="modal-card" style={{ maxWidth: 520 }}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Music2 size={24} color="#1db954" />
             <h2 className="modal-title">Spotify Playlist Mode</h2>
           </div>
-          <button className="close-btn" onClick={onClose}>
+          <button className="close-btn" aria-label="Close dialog" onClick={onClose}>
             <X size={20} />
           </button>
         </div>

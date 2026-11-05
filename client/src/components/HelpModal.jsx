@@ -1,13 +1,15 @@
+import useDialog from '../hooks/useDialog.js';
 import React from 'react';
 import { X, Volume2, Search, CheckCircle } from 'lucide-react';
 
 export default function HelpModal({ onClose }) {
+  const dialogRef = useDialog(onClose);
   return (
     <div className="modal-overlay">
-      <div className="modal-card">
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Help" className="modal-card">
         <div className="modal-header">
           <h2 className="modal-title">How to Play</h2>
-          <button className="close-btn" onClick={onClose}>
+          <button className="close-btn" aria-label="Close dialog" onClick={onClose}>
             <X size={20} />
           </button>
         </div>

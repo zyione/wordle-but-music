@@ -176,8 +176,7 @@ export default function App() {
           }
         }
 
-        // Only show profile modal for new un-authenticated players
-        setShowProfileModal(true);
+        // Players can create a profile from the header whenever they are ready.
       } catch (err) {
         console.warn('Profile fetch warning:', err);
       }
@@ -617,7 +616,7 @@ export default function App() {
     try {
       const timeTakenMs = Date.now() - startTime;
       const currentCount = guesses.length;
-      const skipCount = targetIndex - currentCount + 1;
+      const skipCount = targetIndex - currentCount;
 
       const bodyPayload = {
         puzzleId: puzzleData.puzzleId,
@@ -676,7 +675,6 @@ export default function App() {
 
   return (
     <>
-      <AudioUnlockBanner onUnlocked={() => {}} />
       <Header
         gameMode={gameMode}
         onToggleMode={handleToggleMode}
@@ -730,14 +728,7 @@ export default function App() {
           </button>
         </div>
       ) : (
-        <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <GuessGrid
-            guesses={guesses}
-            maxGuesses={puzzleData?.maxGuesses || 6}
-            currentIndex={guesses.length}
-            onSelectStep={handleSelectStep}
-          />
-
+        <main className="game-main" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <Player
             previewUrl={puzzleData?.previewUrl}
             songId={puzzleData?.targetSongId}
@@ -762,7 +753,7 @@ export default function App() {
                   className="share-btn"
                   onClick={handlePlayNextRandom}
                   style={{
-                    background: gameMode === 'spotify' ? 'linear-gradient(135deg, #1db954, #059669)' : 'linear-gradient(135deg, #8b5cf6, #ec4899)',
+                    background: gameMode === 'spotify' ? 'linear-gradient(135deg, #1db954, #059669)' : 'linear-gradient(135deg, #c5f74a, #a5d637)',
                     boxShadow: '0 4px 15px rgba(29, 185, 84, 0.3)'
                   }}
                 >
@@ -773,12 +764,18 @@ export default function App() {
               <button
                 className="share-btn"
                 onClick={() => setShowResult(true)}
-                style={{ background: gameMode !== 'daily' ? 'rgba(255, 255, 255, 0.08)' : 'linear-gradient(135deg, #10b981, #059669)' }}
+                style={{ background: gameMode !== 'daily' ? 'rgba(255, 255, 255, 0.08)' : 'var(--accent-primary)', color: gameMode !== 'daily' ? 'var(--text-main)' : '#172107' }}
               >
                 Show Result & Share
               </button>
             </div>
           )}
+          <GuessGrid
+            guesses={guesses}
+            maxGuesses={puzzleData?.maxGuesses || 6}
+            currentIndex={guesses.length}
+            onSelectStep={handleSelectStep}
+          />
         </main>
       )}
 
@@ -817,6 +814,8 @@ export default function App() {
           )}
         </div>
       )}
+
+      <AudioUnlockBanner onUnlocked={() => {}} />
 
       {/* MODALS */}
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}

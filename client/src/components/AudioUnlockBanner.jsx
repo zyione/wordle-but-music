@@ -3,7 +3,7 @@ import { Volume2, X } from 'lucide-react';
 
 /**
  * AudioUnlockBanner
- * 
+ *
  * Browsers block autoplay until a user gesture happens.
  * This banner:
  * 1. Shows on first visit (until user dismisses or enables)
@@ -69,14 +69,14 @@ export default function AudioUnlockBanner({ onUnlocked }) {
 
   return (
     <div
-      role="banner"
+      className="audio-unlock-banner" role="status"
       style={{
-        position: 'fixed',
-        bottom: 24,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 3000,
-        background: 'rgba(18, 23, 37, 0.96)',
+        position: 'relative',
+        marginTop: 16,
+        left: 'auto',
+        transform: 'none',
+        zIndex: 1,
+        background: 'rgba(25, 28, 22, 0.96)',
         border: '1px solid rgba(59, 130, 246, 0.4)',
         borderRadius: 16,
         padding: '14px 20px',
@@ -86,8 +86,8 @@ export default function AudioUnlockBanner({ onUnlocked }) {
         boxShadow: '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(59,130,246,0.15)',
         backdropFilter: 'blur(16px)',
         maxWidth: 'calc(100vw - 32px)',
-        width: 420,
-        animation: 'slideUpBanner 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        width: '100%',
+
       }}
     >
       <style>{`

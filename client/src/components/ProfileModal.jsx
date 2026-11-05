@@ -1,9 +1,11 @@
+import useDialog from '../hooks/useDialog.js';
 import React, { useState } from 'react';
 import { X, User, Check, Sparkles, Lock, AlertCircle, ShieldCheck, ArrowLeft, Loader2, KeyRound } from 'lucide-react';
 
 const PRESET_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4'];
 
 export default function ProfileModal({ userProfile, apiBaseUrl = '', anonId = '', onSaveProfile, onClose }) {
+  const dialogRef = useDialog(onClose);
   const [step, setStep] = useState(1); // 1 = Name Input, 2 = PIN Input & Login/Register
   const [displayName, setDisplayName] = useState(userProfile?.displayName || localStorage.getItem('song_guesser_saved_username') || '');
   const [pin, setPin] = useState(localStorage.getItem('song_guesser_user_pin') || '');
@@ -88,7 +90,7 @@ export default function ProfileModal({ userProfile, apiBaseUrl = '', anonId = ''
 
   return (
     <div className="modal-overlay">
-      <div className="modal-card" style={{ maxWidth: 440 }}>
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Profile" className="modal-card" style={{ maxWidth: 440 }}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <User size={22} color="var(--accent-primary)" />
@@ -96,7 +98,7 @@ export default function ProfileModal({ userProfile, apiBaseUrl = '', anonId = ''
               {step === 1 ? 'Enter Your Name' : isTaken ? 'Welcome Back! Log In' : 'Create Profile & PIN'}
             </h2>
           </div>
-          <button className="close-btn" onClick={onClose}>
+          <button className="close-btn" aria-label="Close dialog" onClick={onClose}>
             <X size={20} />
           </button>
         </div>
@@ -170,7 +172,7 @@ export default function ProfileModal({ userProfile, apiBaseUrl = '', anonId = ''
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 10,
-                background: 'linear-gradient(135deg, #ec4899, #8b5cf6)',
+                background: 'linear-gradient(135deg, #c5f74a, #a5d637)',
                 fontWeight: 800,
                 fontSize: '1rem'
               }}

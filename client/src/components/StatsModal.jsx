@@ -1,16 +1,18 @@
+import useDialog from '../hooks/useDialog.js';
 import React from 'react';
 import { X, Award, Flame, Target } from 'lucide-react';
 
 export default function StatsModal({ stats, onClose }) {
+  const dialogRef = useDialog(onClose);
   const { played = 0, won = 0, currentStreak = 0, maxStreak = 0 } = stats || {};
   const winPercent = played > 0 ? Math.round((won / played) * 100) : 0;
 
   return (
     <div className="modal-overlay">
-      <div className="modal-card">
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Stats" className="modal-card">
         <div className="modal-header">
           <h2 className="modal-title">Your Statistics</h2>
-          <button className="close-btn" onClick={onClose}>
+          <button className="close-btn" aria-label="Close dialog" onClick={onClose}>
             <X size={20} />
           </button>
         </div>

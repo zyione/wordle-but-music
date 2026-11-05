@@ -74,7 +74,7 @@ export default function PartyLobby({ partyState, anonId, apiBaseUrl, onStartGame
             fontSize: '2.4rem',
             fontWeight: 900,
             letterSpacing: '6px',
-            color: '#ec4899',
+            color: '#c5f74a',
             fontFamily: 'monospace'
           }}>
             {partyState?.code}
@@ -82,9 +82,9 @@ export default function PartyLobby({ partyState, anonId, apiBaseUrl, onStartGame
           <button
             onClick={handleCopyCode}
             style={{
-              background: copied ? '#10b981' : 'rgba(236, 72, 153, 0.15)',
-              border: '1px solid rgba(236, 72, 153, 0.4)',
-              color: copied ? '#fff' : '#ec4899',
+              background: copied ? '#10b981' : 'rgba(197, 247, 74, 0.15)',
+              border: '1px solid rgba(197, 247, 74, 0.4)',
+              color: copied ? '#fff' : '#c5f74a',
               padding: '8px 14px',
               borderRadius: 12,
               display: 'flex',
@@ -115,7 +115,7 @@ export default function PartyLobby({ partyState, anonId, apiBaseUrl, onStartGame
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
           <h3 style={{ fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Users size={18} color="#ec4899" />
+            <Users size={18} color="#c5f74a" />
             <span>Players in Room</span>
           </h3>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>
@@ -137,8 +137,8 @@ export default function PartyLobby({ partyState, anonId, apiBaseUrl, onStartGame
                   justifyContent: 'space-between',
                   padding: '10px 14px',
                   borderRadius: 12,
-                  background: isMe ? 'rgba(236, 72, 153, 0.12)' : 'rgba(255, 255, 255, 0.04)',
-                  border: isMe ? '1px solid rgba(236, 72, 153, 0.4)' : '1px solid rgba(255, 255, 255, 0.05)'
+                  background: isMe ? 'rgba(197, 247, 74, 0.12)' : 'rgba(255, 255, 255, 0.04)',
+                  border: isMe ? '1px solid rgba(197, 247, 74, 0.4)' : '1px solid rgba(255, 255, 255, 0.05)'
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -162,7 +162,7 @@ export default function PartyLobby({ partyState, anonId, apiBaseUrl, onStartGame
                         {m.displayName}
                       </span>
                       {isMe && (
-                        <span style={{ fontSize: '0.65rem', background: '#ec4899', color: '#fff', padding: '1px 6px', borderRadius: 10, fontWeight: 700 }}>
+                        <span style={{ fontSize: '0.65rem', background: '#c5f74a', color: '#fff', padding: '1px 6px', borderRadius: 10, fontWeight: 700 }}>
                           YOU
                         </span>
                       )}
@@ -200,7 +200,7 @@ export default function PartyLobby({ partyState, anonId, apiBaseUrl, onStartGame
             onClick={onStartGame}
             style={{
               width: '100%',
-              background: 'linear-gradient(135deg, #ec4899, #8b5cf6)',
+              background: 'linear-gradient(135deg, #c5f74a, #a5d637)',
               padding: '14px 24px',
               borderRadius: 16,
               fontSize: '1rem',
@@ -209,7 +209,7 @@ export default function PartyLobby({ partyState, anonId, apiBaseUrl, onStartGame
               alignItems: 'center',
               justifyContent: 'center',
               gap: 10,
-              boxShadow: '0 8px 25px rgba(236, 72, 153, 0.4)'
+              boxShadow: '0 8px 25px rgba(197, 247, 74, 0.4)'
             }}
           >
             <Play size={20} />
@@ -228,7 +228,7 @@ export default function PartyLobby({ partyState, anonId, apiBaseUrl, onStartGame
             fontSize: '0.9rem',
             fontWeight: 600
           }}>
-            <Loader2 size={18} style={{ animation: 'spin 1.2s linear infinite', color: '#ec4899' }} />
+            <Loader2 size={18} style={{ animation: 'spin 1.2s linear infinite', color: '#c5f74a' }} />
             <span>Waiting for host to start game...</span>
           </div>
         )}

@@ -1,7 +1,9 @@
+import useDialog from '../hooks/useDialog.js';
 import React, { useState, useEffect } from 'react';
 import { X, Trophy, Calendar, Flame, Loader2 } from 'lucide-react';
 
 export default function LeaderboardModal({ apiBaseUrl, anonId, onClose }) {
+  const dialogRef = useDialog(onClose);
   const [tab, setTab] = useState('daily'); // 'daily' | 'alltime'
   const [loading, setLoading] = useState(true);
   const [dailyBoard, setDailyBoard] = useState([]);
@@ -47,13 +49,13 @@ export default function LeaderboardModal({ apiBaseUrl, anonId, onClose }) {
 
   return (
     <div className="modal-overlay">
-      <div className="modal-card" style={{ maxWidth: 540 }}>
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Leaderboard" className="modal-card" style={{ maxWidth: 540 }}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Trophy size={24} color="#f59e0b" />
             <h2 className="modal-title">Leaderboard</h2>
           </div>
-          <button className="close-btn" onClick={onClose}>
+          <button className="close-btn" aria-label="Close dialog" onClick={onClose}>
             <X size={20} />
           </button>
         </div>

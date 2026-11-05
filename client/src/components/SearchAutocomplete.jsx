@@ -10,29 +10,34 @@ export default function SearchAutocomplete({ onMakeGuess, onSkip, disabled, apiB
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const dropdownRef = useRef(null);
+  const [searchStatus, setSearchStatus] = useState('');
 
   useEffect(() => {
-    if (!query.trim() || selectedSong?.title === query) {
+    if (!query.trim() || selectedSong) {
       setSuggestions([]);
       setIsOpen(false);
+      setSearchStatus('');
       return;
     }
-
+    const controller = new AbortController();
+    setSuggestions([]);
+    setIsOpen(false);
+    setSearchStatus('Searching…');
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`${apiBaseUrl}/api/search?q=${encodeURIComponent(query)}`);
-        if (res.ok) {
-          const data = await res.json();
-          setSuggestions(data);
-          setIsOpen(data.length > 0);
-          setSelectedIndex(-1);
-        }
+        const res = await fetch(`${apiBaseUrl}/api/search?q=${encodeURIComponent(query)}`, { signal: controller.signal });
+        if (!res.ok) throw new Error('Search unavailable');
+        const data = await res.json();
+        if (controller.signal.aborted) return;
+        setSuggestions(data);
+        setIsOpen(data.length > 0);
+        setSelectedIndex(-1);
+        setSearchStatus(data.length ? '' : 'No matches. Try another song or artist.');
       } catch (err) {
-        console.error('Autocomplete fetch error:', err);
+        if (!controller.signal.aborted) setSearchStatus('Search unavailable. Try again in a moment.');
       }
     }, 180);
-
-    return () => clearTimeout(timer);
+    return () => { clearTimeout(timer); controller.abort(); };
   }, [query, selectedSong, apiBaseUrl]);
 
   // Handle click outside to close dropdown
@@ -92,7 +97,13 @@ export default function SearchAutocomplete({ onMakeGuess, onSkip, disabled, apiB
         <input
           type="text"
           className="search-input"
-          placeholder="Know it? Search for artist or song name..."
+          role="combobox"
+          aria-label="Search for a song or artist"
+          aria-expanded={isOpen}
+          aria-controls="song-suggestions"
+          aria-autocomplete="list"
+          aria-activedescendant={isOpen && selectedIndex >= 0 ? `song-option-${selectedIndex}` : undefined}
+          placeholder="Search for a song or artist…"
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
@@ -108,10 +119,13 @@ export default function SearchAutocomplete({ onMakeGuess, onSkip, disabled, apiB
 
         {/* Dropdown popup */}
         {isOpen && (
-          <div className="autocomplete-dropdown">
+          <div className="autocomplete-dropdown" id="song-suggestions" role="listbox" aria-label="Song suggestions">
             {suggestions.map((song, idx) => (
               <div
                 key={song.id}
+                id={`song-option-${idx}`}
+                role="option"
+                aria-selected={idx === selectedIndex}
                 className={`suggestion-item ${idx === selectedIndex ? 'selected' : ''}`}
                 onClick={() => handleSelect(song)}
               >
@@ -130,6 +144,7 @@ export default function SearchAutocomplete({ onMakeGuess, onSkip, disabled, apiB
         )}
       </form>
 
+      {searchStatus && <p className="search-status" role="status">{searchStatus}</p>}
       <div className="action-buttons">
         <button
           type="button"

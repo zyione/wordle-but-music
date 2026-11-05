@@ -1,78 +1,109 @@
-import React from 'react';
-import { Check, X, FastForward } from 'lucide-react';
+import React from "react";
+import { Check, X, FastForward } from "lucide-react";
 
-export default function GuessGrid({ guesses, maxGuesses = 6, currentIndex, onSelectStep }) {
-  const rows = Array.from({ length: maxGuesses }, (_, idx) => {
-    const guess = guesses[idx];
-    const isCurrent = idx === currentIndex && !guess;
-    const isFuture = idx > currentIndex && !guess;
-
-    let rowClass = 'guess-row';
-    if (isCurrent) rowClass += ' active-row';
-    if (isFuture) rowClass += ' future-row';
-
-    if (guess) {
-      if (guess.isCorrect) rowClass += ' row-correct';
-      else if (guess.isSkip) rowClass += ' row-skipped';
-      else rowClass += ' row-wrong';
-    }
-
-    return { idx, guess, isCurrent, isFuture, rowClass };
-  });
-
+export default function GuessGrid({
+  guesses,
+  maxGuesses = 6,
+  currentIndex,
+  onSelectStep,
+}) {
+  const finished =
+    guesses.some((g) => g.isCorrect) || guesses.length >= maxGuesses;
   return (
-    <div className="guess-grid">
-      {rows.map(({ idx, guess, isCurrent, isFuture, rowClass }) => (
-        <div
-          key={idx}
-          className={rowClass}
-          onClick={() => isFuture && onSelectStep && onSelectStep(idx)}
-          style={{ cursor: isFuture ? 'pointer' : 'default' }}
-        >
-          <span className="guess-num">{idx + 1}</span>
-
-          <div className="guess-content">
-            {guess ? (
-              guess.isSkip ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--status-skipped)', fontWeight: 600 }}>
-                  <FastForward size={18} />
-                  <span>SKIPPED</span>
-                </div>
-              ) : (
-                <>
-                  {guess.guessedSong?.artwork_url && (
-                    <img
-                      src={guess.guessedSong.artwork_url}
-                      alt={guess.guessedSong.title}
-                      className="guess-art"
-                    />
+    <section className="attempts-section" aria-label="Attempt history">
+      <div className="attempts-heading">
+        <h2>ATTEMPTS</h2>
+        <span>
+          {guesses.length} / {maxGuesses}
+        </span>
+      </div>
+      <div className="attempt-slots">
+        {Array.from({ length: maxGuesses }, (_, i) => {
+          const g = guesses[i];
+          const future = i > currentIndex && !finished;
+          const label = g
+            ? g.isCorrect
+              ? "Correct"
+              : g.isSkip
+                ? "Skipped"
+                : "Incorrect"
+            : i === currentIndex && !finished
+              ? "Current attempt"
+              : "Unused";
+          return (
+            <button
+              type="button"
+              key={i}
+              className={`attempt-slot ${g ? (g.isCorrect ? "correct" : g.isSkip ? "skipped" : "wrong") : i === currentIndex && !finished ? "current" : ""}`}
+              onClick={() => future && onSelectStep?.(i)}
+              disabled={!future}
+              title={
+                future
+                  ? `Go to attempt ${i + 1} — uses ${i - currentIndex} ${i - currentIndex === 1 ? "attempt" : "attempts"}`
+                  : `${i + 1}: ${label}`
+              }
+              aria-label={`Attempt ${i + 1}: ${label}${future ? `; unlock using ${i - currentIndex} ${i - currentIndex === 1 ? "attempt" : "attempts"}` : ""}`}
+            >
+              <span>{i + 1}</span>
+              {g &&
+                (g.isCorrect ? (
+                  <Check size={14} />
+                ) : g.isSkip ? (
+                  <FastForward size={12} />
+                ) : (
+                  <X size={14} />
+                ))}
+            </button>
+          );
+        })}
+      </div>
+      {guesses.length > 0 && (
+        <ol className="guess-grid">
+          {guesses.map((g, i) => (
+            <li
+              key={i}
+              className={`guess-row ${g.isCorrect ? "row-correct" : g.isSkip ? "row-skipped" : "row-wrong"}`}
+            >
+              <span className="guess-num">{i + 1}</span>
+              {g.guessedSong?.artwork_url && (
+                <img
+                  src={g.guessedSong.artwork_url}
+                  alt=""
+                  className="guess-art"
+                />
+              )}
+              <div className="guess-content">
+                <div className="guess-info">
+                  <span className="guess-title">
+                    {g.isSkip
+                      ? "Skipped — longer clip unlocked"
+                      : g.guessedSong?.title || "Unknown song"}
+                  </span>
+                  {!g.isSkip && (
+                    <span className="guess-artist">
+                      {g.guessedSong?.artist}
+                    </span>
                   )}
-                  <div className="guess-info">
-                    <span className="guess-title">{guess.guessedSong?.title || 'Unknown Song'}</span>
-                    <span className="guess-artist">{guess.guessedSong?.artist || 'Unknown Artist'}</span>
-                  </div>
-                </>
-              )
-            ) : (
-              <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>
-                {isCurrent ? 'Current attempt...' : ''}
+                </div>
+              </div>
+              <span
+                className="status-badge"
+                aria-label={
+                  g.isCorrect ? "Correct" : g.isSkip ? "Skipped" : "Incorrect"
+                }
+              >
+                {g.isCorrect ? (
+                  <Check size={18} />
+                ) : g.isSkip ? (
+                  <FastForward size={16} />
+                ) : (
+                  <X size={18} />
+                )}
               </span>
-            )}
-          </div>
-
-          <div className="status-badge">
-            {guess && (
-              guess.isCorrect ? (
-                <Check size={20} color="var(--status-correct)" />
-              ) : guess.isSkip ? (
-                <FastForward size={18} color="var(--status-skipped)" />
-              ) : (
-                <X size={20} color="var(--status-wrong)" />
-              )
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
   );
 }

@@ -1,9 +1,11 @@
+import useDialog from '../hooks/useDialog.js';
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Share2, ExternalLink, Trophy, Music, Shuffle, Play, Pause, Volume2, Volume1, VolumeX } from 'lucide-react';
 
 const DEFAULT_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 
 export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate, gameMode, gameScore = 0, onPlayNextUnlimited, onClose, apiBaseUrl }) {
+  const dialogRef = useDialog(onClose);
   const [copied, setCopied] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef(null);
@@ -115,15 +117,15 @@ export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate,
     <div className="modal-overlay">
       <audio ref={audioRef} src={audioSrc} preload="auto" onEnded={() => setIsPlaying(false)} />
 
-      <div className="modal-card">
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Result" className="modal-card">
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {isSolved ? <Trophy size={24} color="#10b981" /> : <Music size={24} color="#ef4444" />}
+            {isSolved ? <Trophy size={24} color="var(--accent-primary)" /> : <Music size={24} color="#ef4444" />}
             <h2 className="modal-title">
-              {isSolved ? 'Splendid! You guessed it!' : 'Game Over! The song was:'}
+              {isSolved ? 'CORRECT!' : 'THE SONG WAS…'}
             </h2>
           </div>
-          <button className="close-btn" onClick={onClose}>
+          <button className="close-btn" aria-label="Close dialog" onClick={onClose}>
             <X size={20} />
           </button>
         </div>
@@ -133,7 +135,7 @@ export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate,
             {targetSong.artwork_url ? (
               <img src={targetSong.artwork_url} alt={targetSong.title} className="reveal-art" />
             ) : (
-              <div className="reveal-art" style={{ background: '#1e293b' }} />
+              <div className="reveal-art" style={{ background: '#2c3324' }} />
             )}
 
             {/* Floating Audio Play/Pause Button */}
@@ -143,7 +145,7 @@ export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate,
                 position: 'absolute',
                 bottom: 10,
                 right: 10,
-                background: isPlaying ? '#10b981' : '#3b82f6',
+                background: 'var(--accent-primary)',
                 border: 'none',
                 width: 44,
                 height: 44,
@@ -175,7 +177,7 @@ export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate,
           {/* SLEEK VOLUME CONTROL ALIGNED WITH MAIN PLAYER */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 4 }}>
             {isPlaying && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#10b981', fontSize: '0.8rem', fontWeight: 600 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--accent-primary)', fontSize: '0.8rem', fontWeight: 600 }}>
                 <span>Playing 30s preview</span>
               </div>
             )}
@@ -231,6 +233,7 @@ export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate,
             </div>
           </div>
 
+          <div className="result-summary"><div><strong>{isSolved ? guesses.length : 'X'} / 6</strong><span>ATTEMPTS</span></div><div><strong>{gameScore.toLocaleString()}<small> pts</small></strong><span>SCORE</span></div></div>
           <div className="share-grid-box">
             {guesses.map((g, i) => (
               <span key={i}>
@@ -248,7 +251,7 @@ export default function ResultModal({ targetSong, guesses, isSolved, puzzleDate,
               className="share-btn"
               onClick={onPlayNextUnlimited}
               style={{
-                background: gameMode === 'spotify' ? 'linear-gradient(135deg, #1db954, #059669)' : 'linear-gradient(135deg, #8b5cf6, #ec4899)',
+                background: gameMode === 'spotify' ? 'linear-gradient(135deg, #1db954, #059669)' : 'linear-gradient(135deg, #c5f74a, #a5d637)',
                 boxShadow: gameMode === 'spotify' ? '0 4px 15px rgba(29, 185, 84, 0.3)' : '0 4px 15px rgba(236, 72, 153, 0.3)'
               }}
             >
