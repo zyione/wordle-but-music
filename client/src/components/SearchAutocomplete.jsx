@@ -1,3 +1,4 @@
+import { apiFetch as fetch } from '../lib/api.js';
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, FastForward, CheckCircle } from 'lucide-react';
 

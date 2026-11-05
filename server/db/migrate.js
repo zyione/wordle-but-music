@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import db from './db.js';
+import { hashPin } from '../services/auth.js';
 import { calculateScore } from '../services/scoring.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -41,6 +42,12 @@ export function migrate() {
     console.warn('Backfill score warning:', err.message);
   }
 
+  db.transaction(() => {
+    for (const user of db.prepare("SELECT id, pin FROM users WHERE pin IS NOT NULL AND pin NOT LIKE 'scrypt$%'").all()) {
+      db.prepare('UPDATE users SET pin = ? WHERE id = ?').run(hashPin(user.pin), user.id);
+    }
+    db.prepare('DELETE FROM auth_sessions WHERE expires_at <= ?').run(Date.now());
+  });
   console.log('Migrations completed successfully.');
 }
 

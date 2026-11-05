@@ -1,3 +1,4 @@
+import { apiFetch as fetch } from '../lib/api.js';
 import useDialog from '../hooks/useDialog.js';
 import React, { useState, useEffect } from 'react';
 import { X, Trophy, Calendar, Flame, Loader2 } from 'lucide-react';

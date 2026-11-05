@@ -1,3 +1,5 @@
+import { getSession } from './lib/api.js';
+import { apiFetch as fetch } from './lib/api.js';
 import React, { useState, useEffect } from 'react';
 import Header from './components/Header.jsx';
 import GuessGrid from './components/GuessGrid.jsx';
@@ -16,15 +18,6 @@ import AudioUnlockBanner from './components/AudioUnlockBanner.jsx';
 import { Shuffle, Loader2, CheckCircle2 } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
-
-function getAnonId() {
-  let id = localStorage.getItem('song_guesser_anon_id');
-  if (!id) {
-    id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'user_' + Math.random().toString(36).substring(2, 11);
-    localStorage.setItem('song_guesser_anon_id', id);
-  }
-  return id;
-}
 
 function getLocalStats() {
   try {
@@ -80,7 +73,8 @@ export default function App() {
   const [showResult, setShowResult] = useState(false);
   const [stats, setStats] = useState(getLocalStats());
 
-  const anonId = getAnonId();
+  const [anonId, setAnonId] = useState(null);
+  useEffect(() => { getSession().then(session => setAnonId(session.anonId)).catch(err => { setError(err.message); setLoading(false); }); }, []);
 
   // Global Audio Context unlock listener for page refresh
   useEffect(() => {
@@ -110,6 +104,7 @@ export default function App() {
 
   // Load User Profile on mount with persistent account memory
   useEffect(() => {
+    if (!anonId) return;
     const fetchProfile = async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/api/users/profile?anonId=${anonId}`);
@@ -124,6 +119,7 @@ export default function App() {
         // If no active profile found for anonId, try silent auto-login using saved account credentials
         const savedName = localStorage.getItem('song_guesser_saved_username');
         const savedPin = localStorage.getItem('song_guesser_user_pin');
+        localStorage.removeItem('song_guesser_user_pin');
 
         if (savedName && savedPin) {
           const autoRes = await fetch(`${API_BASE_URL}/api/users/profile`, {
@@ -134,6 +130,7 @@ export default function App() {
           if (autoRes.ok) {
             const autoData = await autoRes.json();
             setUserProfile(autoData);
+            setAnonId(autoData.anonId);
             return;
           }
         }
@@ -160,9 +157,10 @@ export default function App() {
       setUserProfile(data);
       // Remember account credentials locally so user never has to log in again on future visits
       localStorage.setItem('song_guesser_saved_username', displayName);
-      localStorage.setItem('song_guesser_user_pin', pin);
+      localStorage.removeItem('song_guesser_user_pin');
+      setAnonId(data.anonId);
       // Re-fetch daily puzzle to sync attempt status cross-device
-      fetchPuzzle('daily');
+      if (gameMode === 'daily') fetchPuzzle('daily');
       return { success: true, profile: data };
     } catch (err) {
       console.error('Error saving profile:', err);
@@ -262,11 +260,11 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (gameMode !== 'party') {
+    if (anonId && gameMode !== 'party') {
       setPlayedSongIds([]);
       fetchPuzzle(gameMode);
     }
-  }, [gameMode]);
+  }, [gameMode, anonId]);
 
   const handleToggleMode = (newMode) => {
     if (newMode === 'party') {

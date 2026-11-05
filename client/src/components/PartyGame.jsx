@@ -1,3 +1,4 @@
+import { apiFetch as fetch } from '../lib/api.js';
 import React, { useState, useEffect } from 'react';
 import GuessGrid from './GuessGrid.jsx';
 import Player from './Player.jsx';

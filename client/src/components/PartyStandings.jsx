@@ -1,3 +1,4 @@
+import { apiFetch as fetch } from '../lib/api.js';
 import React, { useState, useEffect } from 'react';
 import { Trophy, Award, Medal, Share2, LogOut, Check, RefreshCw } from 'lucide-react';
 

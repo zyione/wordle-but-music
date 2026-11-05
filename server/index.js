@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import sessionRoutes from './routes/session.js';
+import { requireSession } from './services/auth.js';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -25,6 +27,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 4000;
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
 
@@ -63,17 +66,20 @@ app.use(cors({
 
 app.use(express.json());
 
-// API Routes
+// Audio elements cannot send authorization headers. Only trusted preview hosts
+// are reachable through this read-only proxy; all game state requires a session.
+app.use('/api', sessionRoutes);
+app.use('/api', adminRoutes);
 app.use('/api', configRoutes);
-app.use('/api', puzzleRoutes);
 app.use('/api', searchRoutes);
+app.use('/api', audioProxyRoutes);
+app.use('/api', requireSession);
+app.use('/api', puzzleRoutes);
 app.use('/api', guessRoutes);
 app.use('/api', spotifyRoutes);
-app.use('/api', audioProxyRoutes);
 app.use('/api', userRoutes);
 app.use('/api', leaderboardRoutes);
 app.use('/api', partyRoutes);
-app.use('/api', adminRoutes);
 
 // Healthcheck
 app.get('/health', (req, res) => {

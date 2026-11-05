@@ -1,3 +1,4 @@
+import { apiFetch as fetch } from '../lib/api.js';
 import useDialog from '../hooks/useDialog.js';
 import React, { useState } from 'react';
 import { X, User, Check, Sparkles, Lock, AlertCircle, ShieldCheck, ArrowLeft, Loader2, KeyRound } from 'lucide-react';
@@ -8,7 +9,7 @@ export default function ProfileModal({ userProfile, apiBaseUrl = '', anonId = ''
   const dialogRef = useDialog(onClose);
   const [step, setStep] = useState(1); // 1 = Name Input, 2 = PIN Input & Login/Register
   const [displayName, setDisplayName] = useState(userProfile?.displayName || localStorage.getItem('song_guesser_saved_username') || '');
-  const [pin, setPin] = useState(localStorage.getItem('song_guesser_user_pin') || '');
+  const [pin, setPin] = useState('');
   const [avatarColor, setAvatarColor] = useState(userProfile?.avatarColor || PRESET_COLORS[0]);
   
   const [isTaken, setIsTaken] = useState(false);
@@ -73,7 +74,7 @@ export default function ProfileModal({ userProfile, apiBaseUrl = '', anonId = ''
         return;
       }
 
-      localStorage.setItem('song_guesser_user_pin', pin.trim());
+      localStorage.removeItem('song_guesser_user_pin');
       setSaving(false);
       onClose();
     } catch (err) {

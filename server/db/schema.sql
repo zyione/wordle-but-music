@@ -97,3 +97,10 @@ CREATE TABLE IF NOT EXISTS party_scores (
     completed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(party_code, round_number, anon_id)
 );
+
+CREATE TABLE IF NOT EXISTS auth_sessions (
+    token_hash TEXT PRIMARY KEY,
+    anon_id TEXT NOT NULL,
+    expires_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS auth_sessions_identity ON auth_sessions(anon_id);
