@@ -1,6 +1,7 @@
 import express from 'express';
 import db from '../db/db.js';
-import { fetchAudio, freshPreviewCandidates, fallbackPreviewCandidates, isExpiredPreview, isTrustedAudioUrl } from '../services/audioPreview.js';
+import { isTrustedAudioUrl } from '../services/audioPreview.js';
+import { previewStore } from '../services/previewStore.js';
 const router = express.Router();
 router.get('/audio/proxy', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
@@ -10,32 +11,11 @@ router.get('/audio/proxy', async (req, res) => {
     const suppliedUrl = typeof req.query.url === 'string' ? req.query.url : null;
     if (suppliedUrl && !isTrustedAudioUrl(suppliedUrl)) return res.status(400).json({ error: 'Unsupported audio source' });
     if (!song && suppliedUrl) song = db.prepare('SELECT * FROM songs WHERE preview_url = ?').get(suppliedUrl);
-    let audioUrl = suppliedUrl || song?.preview_url;
-    if (!audioUrl) return res.status(404).json({ error: 'Audio preview not found' });
-    let response = req.query.refresh !== '1' && !isExpiredPreview(audioUrl) ? await fetchAudio(audioUrl) : null;
-    if (!response && song) {
-      for (const candidates of [freshPreviewCandidates, fallbackPreviewCandidates]) {
-        for (const candidate of await candidates(song)) {
-          response = await fetchAudio(candidate);
-          if (response) { audioUrl = candidate; break; }
-        }
-        if (response) break;
-      }
-      if (response && audioUrl !== song.preview_url) db.prepare('UPDATE songs SET preview_url = ? WHERE id = ?').run(audioUrl, song.id);
-    }
-    if (!response) return res.status(502).json({ error: 'Preview temporarily unavailable. Please try again.' });
-    const reader = response.body.getReader();
-    const chunks = [];
-    let length = 0;
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      length += value.length;
-      if (length > 2 * 1024 * 1024) { await reader.cancel(); return res.status(502).json({ error: 'Invalid preview size' }); }
-      chunks.push(Buffer.from(value));
-    }
-    const buffer = Buffer.concat(chunks);
-    res.setHeader('Content-Type', response.headers.get('content-type') || 'audio/mpeg');
+    if (!song) return res.status(404).json({ error: 'Audio preview not found' });
+    const clip = await previewStore.resolve(song.id, { refresh: req.query.refresh === '1' });
+    if (!clip) return res.status(503).json({ error: 'No playable preview is currently available for this song.' });
+    const { buffer, contentType } = clip;
+    res.setHeader('Content-Type', contentType);
     res.setHeader('Accept-Ranges', 'bytes');
     const range = req.headers.range;
     if (range) {

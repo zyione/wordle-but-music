@@ -1,7 +1,8 @@
 import express from 'express';
 import { createRun, publicPuzzle } from '../services/gameEngine.js';
-import { pickSong, parseSongIds } from '../services/randomSongs.js';
+import { pickPlayableSong, parseSongIds } from '../services/randomSongs.js';
 import db from '../db/db.js';
+import { previewStore } from '../services/previewStore.js';
 import { scheduleToday } from '../db/scheduleToday.js';
 
 const router = express.Router();
@@ -22,10 +23,10 @@ router.get('/puzzle/today', (req, res) => {
 router.get('/puzzle/random', async (req, res) => {
   try {
     const excludeIds = parseSongIds(req.query.excludeIds);
-    const { song, historyReset } = pickSong(db.prepare("SELECT id, title, artist, preview_url FROM songs WHERE preview_url <> ''").all(), excludeIds);
+    const { song, historyReset } = await pickPlayableSong(db.prepare("SELECT id, title, artist, preview_url FROM songs WHERE preview_url <> ''").all(), excludeIds, previewStore);
 
     if (!song) {
-      return res.status(404).json({ error: 'No songs available in database to play unlimited mode.' });
+      return res.status(503).json({ error: 'Finding playable previews is taking longer than usual. Please try again.' });
     }
 
     const run = createRun({ owner: req.identity, songId: song.id, mode: 'unlimited' });

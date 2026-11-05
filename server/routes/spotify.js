@@ -1,7 +1,8 @@
 import express from 'express';
 import { createRun, publicPuzzle } from '../services/gameEngine.js';
-import { pickSong, parseSongIds } from '../services/randomSongs.js';
+import { pickPlayableSong, parseSongIds } from '../services/randomSongs.js';
 import db from '../db/db.js';
+import { previewStore } from '../services/previewStore.js';
 import { createImport, ownedImport } from '../services/playlistImports.js';
 
 const router = express.Router();
@@ -31,7 +32,7 @@ router.get('/puzzle/spotify', async (req, res) => {
     if (!ids.length) return res.status(400).json({ error: 'Invalid songIds' });
     const placeholders = ids.map(() => '?').join(',');
     const songs = db.prepare(`SELECT id, title, artist, preview_url FROM songs WHERE id IN (${placeholders})`).all(...ids);
-    const { song, historyReset } = pickSong(songs, parseSongIds(rawExclude));
+    const { song, historyReset } = await pickPlayableSong(songs, parseSongIds(rawExclude), previewStore);
 
     if (!song) {
       return res.status(404).json({ error: 'Selected song not found in database' });
