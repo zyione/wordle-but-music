@@ -3,6 +3,7 @@ import cors from 'cors';
 import sessionRoutes from './routes/session.js';
 import { requireSession } from './services/auth.js';
 import { resumeImports } from './services/playlistImports.js';
+import { backupState } from './db/db.js';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -85,7 +86,7 @@ app.use('/api', partyRoutes);
 
 // Healthcheck
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ status: 'ok', timestamp: new Date().toISOString(), revision: process.env.RENDER_GIT_COMMIT || null, backup: backupState.status });
 });
 
 app.listen(PORT, () => {

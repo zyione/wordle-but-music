@@ -13,7 +13,10 @@ fs.mkdirSync(path.dirname(resolvedPath), { recursive: true });
 const url = process.env.SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY;
 export const supabase = process.env.DISABLE_CLOUD_BACKUP === '1' ? null : url && key ? createClient(url, key, { auth: { persistSession: false } }) : null;
+export const backupState = { status: supabase ? 'starting' : 'disabled' };
+let cloudReady = false;
 if (supabase) {
+  try {
   const { data: buckets, error } = await supabase.storage.listBuckets();
   if (error) throw new Error('Private database backup requires a Supabase service-role key');
   const existing = buckets.find(b => b.name === 'database');
@@ -22,7 +25,15 @@ if (supabase) {
   if (!fs.existsSync(resolvedPath)) {
     const { data, error: downloadError } = await supabase.storage.from('database').download('songs.db');
     if (data) fs.writeFileSync(resolvedPath, Buffer.from(await data.arrayBuffer()));
-    else if (downloadError && !['404', '400'].includes(String(downloadError.statusCode)) && !/not found/i.test(downloadError.message)) throw new Error('Unable to restore database backup safely');
+    else if (downloadError && String(downloadError.statusCode) !== '404' && !/not found/i.test(downloadError.message)) throw new Error('Unable to restore database backup safely');
+  }
+  cloudReady = true;
+  backupState.status = 'private';
+  } catch (error) {
+    // Keep local data available, but never upload a fresh database over a backup
+    // that could not be restored or whose access policy was not verified.
+    backupState.status = 'unavailable';
+    console.error('Cloud backup unavailable; using local SQLite only:', error.message);
   }
 }
 
@@ -34,7 +45,7 @@ let transactionDepth = 0;
 let syncing = null;
 
 export async function flushBackup() {
-  if (!supabase) return;
+  if (!supabase || !cloudReady) return;
   if (syncing) { await syncing; if (!dirty) return; }
   if (!dirty) return;
   dirty = false;
